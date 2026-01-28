@@ -170,3 +170,30 @@ Task ID: T05
 - All tested via agent-browser
 
 ---
+
+## 2026-01-28 - T06: Candidate List View
+Thread: https://ampcode.com/threads/T-019c065f-3cae-7209-b5a9-a89b18549667
+Task ID: T06
+- Added search by name with search input field
+- Added tag chip filtering with toggle selection (AND logic - all selected tags must match)
+- Added sorting by name and updated_at with visual indicators
+- Added Primary Profile column showing profile name from lookup map
+- Added Updated column showing formatted date
+- Added "No matching candidates" empty state when filters return no results
+- Added "Clear all" button to reset filters
+
+**Files modified:**
+- src/pages/CandidateList.tsx - Added search, tag filters, sorting, profile column, updated column
+
+**Codebase patterns learned:**
+- Use useMemo for derived state (profileMap lookup, filteredCandidates, allTags)
+- Profile display: build Map<id, name> from useProfiles(), then lookup in render
+- Filter state: searchQuery string + selectedTags array, combine with AND logic
+- Sort state: sortField + sortDirection, toggle direction if same field clicked
+- Tag filter chips: selected = accent bg with X icon, unselected = slate bg
+- SortIcon component shows asc/desc chevrons with accent color when active
+
+**Verified:**
+- npm run typecheck passes
+
+---
