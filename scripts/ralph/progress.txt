@@ -100,3 +100,36 @@ Task ID: T03
 - All tested via agent-browser
 
 ---
+
+## 2026-01-28 - T04: Candidate CRUD
+Thread: https://ampcode.com/threads/T-019c0658-7aa6-72d4-8878-311e6fee654b
+Task ID: T04
+- Implemented full CandidateList page with table showing name, tags, interview count, hire signal
+- Created CandidateModal component for create/edit (name + comma-separated tags)
+- Create candidate redirects to detail page after creation
+- Edit candidate modal pre-fills existing data
+- Delete candidate shows confirmation dialog with cascade warning
+- Reused ConfirmDialog component from T03
+
+**Files created:**
+- src/components/CandidateModal.tsx - Create/Edit modal with name and tags input
+
+**Files modified:**
+- src/pages/CandidateList.tsx - Full implementation with table, CRUD, empty state
+
+**Codebase patterns learned:**
+- Tags input: comma-separated string, split and trim on save
+- Row click navigates to detail, edit/delete buttons use e.stopPropagation()
+- InterviewCountBadge uses useInterviews(candidateId) for reactive count
+- HireSignalBadge uses Record<HireSignal, string> for color mapping
+
+**Verified:**
+- npm run typecheck passes
+- Empty state with "Add Candidate" button displays correctly
+- Create Candidate modal opens and creates new candidate
+- Candidate appears in table with tags, redirects to detail page
+- Edit Candidate modal opens with pre-filled data
+- Delete confirmation dialog shows cascade warning
+- All tested via agent-browser
+
+---
