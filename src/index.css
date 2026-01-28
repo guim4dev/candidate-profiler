@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+@plugin "@tailwindcss/forms";
+
+@theme {
+  --color-sidebar: #0f172a;
+  --color-sidebar-light: #1e293b;
+  --color-sidebar-lighter: #334155;
+  
+  --color-accent: #10b981;
+  --color-accent-light: #34d399;
+  --color-accent-dark: #059669;
+  
+  --color-surface: #f8fafc;
+  --color-surface-muted: #f1f5f9;
+  --color-surface-border: #e2e8f0;
+  
+  --font-heading: "DM Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer components {
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 transition-all duration-200 ease-out;
+  }
+
+  .nav-link:hover {
+    @apply bg-sidebar-light text-slate-200;
+  }
+
+  .nav-link.active {
+    @apply bg-accent/10 text-accent;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg bg-accent text-white font-medium transition-all duration-200 hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-medium transition-all duration-200 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2;
+  }
+
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+}

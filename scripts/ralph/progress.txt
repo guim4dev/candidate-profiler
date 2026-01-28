@@ -1,0 +1,39 @@
+# Ralph Progress Log
+Started: 2026-01-28
+Feature: Candidate Profiler - Full Implementation
+
+## Codebase Patterns
+- Tailwind v4 with @tailwindcss/vite plugin (no separate config file)
+- Custom colors: sidebar, accent, surface defined in @theme block in index.css
+- Custom fonts: font-heading (DM Sans), font-body (IBM Plex Sans)
+- Component classes: .nav-link, .btn-primary, .btn-secondary defined in @layer components
+
+---
+
+## 2026-01-28 - T01: Project Setup
+Thread: https://ampcode.com/threads/T-019c064f-244a-70f8-9788-46f4abee2faf
+Task ID: T01
+- Initialized Vite + React 19 + TypeScript project
+- Installed Tailwind CSS v4 with @tailwindcss/forms plugin via @tailwindcss/vite
+- Installed dependencies: dexie, react-router-dom, date-fns, uuid
+- Created folder structure: src/{components,pages,db,utils,types,hooks}
+- Set up React Router with routes: /, /candidates, /candidates/:id, /profiles, /settings
+- Created Layout with dark sidebar (#0f172a) and refined editorial aesthetic
+- Created skeleton pages: CandidateList, CandidateDetail, ProfileManager, Settings
+- Defined TypeScript types in src/types/index.ts
+- Created AGENTS.md with project conventions
+
+**Files created:**
+- package.json, vite.config.ts, index.html
+- src/main.tsx, src/App.tsx, src/index.css
+- src/components/Layout.tsx, src/components/Sidebar.tsx
+- src/pages/CandidateList.tsx, CandidateDetail.tsx, ProfileManager.tsx, Settings.tsx
+- src/types/index.ts
+- AGENTS.md
+
+**Verified:**
+- npm run typecheck passes
+- Dev server runs at http://localhost:5173
+- Navigation between all routes works (verified via agent-browser)
+
+---
