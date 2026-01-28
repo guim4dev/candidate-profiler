@@ -37,3 +37,33 @@ Task ID: T01
 - Navigation between all routes works (verified via agent-browser)
 
 ---
+
+## 2026-01-28 - T02: IndexedDB Schema & Data Layer
+Thread: https://ampcode.com/threads/T-019c0653-b579-72fc-aeaf-e1bd04e5f190
+Task ID: T02
+- Set up Dexie database in src/db/index.ts with stores: candidates, interviews, profiles, settings
+- Created CRUD hooks in src/db/hooks.ts: useProfiles, useCandidates, useInterviews (with all CRUD operations)
+- Implemented default profile seeding (Builder, Specialist, Leader, Generalist, Learner)
+- Added DatabaseProvider component for initialization and error handling
+- Installed dexie-react-hooks for reactive queries
+
+**Files created:**
+- src/db/index.ts - Dexie database setup with schema
+- src/db/hooks.ts - React hooks for CRUD operations using useLiveQuery
+- src/db/seed.ts - Default profile seeding logic
+- src/db/DatabaseProvider.tsx - Initialization and error boundary
+
+**Files modified:**
+- src/App.tsx - Wrapped with DatabaseProvider
+- package.json - Added dexie-react-hooks dependency
+
+**Codebase patterns learned:**
+- Use useLiveQuery from dexie-react-hooks for reactive queries
+- All mutations are async functions (not hooks) for easy calling from event handlers
+- Transactions used for cascading operations (delete candidate with interviews)
+- deleteInterview prevents deletion of last interview (FR-2 requirement)
+
+**Verified:**
+- npm run typecheck passes
+
+---
