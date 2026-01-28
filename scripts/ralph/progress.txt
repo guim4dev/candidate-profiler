@@ -222,3 +222,30 @@ Task ID: T07
 - npm run typecheck passes
 
 ---
+
+## 2026-01-28 - T08: Interview Form (Full)
+Thread: https://ampcode.com/threads/T-019c0663-ad01-7799-ae1e-79a108d3227d
+Task ID: T08
+- Completely redesigned InterviewModal with tabbed interface (Basic Info, Axis Scoring, Profile Fit)
+- Added 5 axis score inputs with distinctive circular button design (1-5 scale)
+- Color-coded score buttons (red→orange→amber→emerald) with dynamic fill and labels
+- Created CollapsibleAxisNotes component for per-axis notes (shows "Add notes" / "Notes added" indicator)
+- Added primary profile dropdown with description preview
+- Added secondary profiles as checkbox list with descriptions (filters out primary selection)
+- Navigation between tabs with Previous/Next buttons in footer
+- Modal now uses flex layout with overflow scroll for content area
+
+**Files modified:**
+- src/components/InterviewModal.tsx - Complete rewrite with tabbed interface, axis scoring, profile selectors
+
+**Codebase patterns learned:**
+- Tabbed modal pattern: activeTab state with conditional rendering, tab buttons in header
+- Score selector: array of circular buttons with filled state based on value <= current
+- SCORE_LABELS constant for score metadata (label + color class)
+- CollapsibleAxisNotes: toggle open state with hasContent indicator
+- Flex column layout with min-h-0 for scrollable content in modal
+
+**Verified:**
+- npm run typecheck passes
+
+---
