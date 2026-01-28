@@ -67,3 +67,36 @@ Task ID: T02
 - npm run typecheck passes
 
 ---
+
+## 2026-01-28 - T03: Profile Manager UI
+Thread: https://ampcode.com/threads/T-019c0655-4434-74f4-ae2b-57ad391b48cf
+Task ID: T03
+- Implemented full Profile Manager page with list, create/edit modal, and delete confirmation
+- Created reusable ProfileModal component with form validation
+- Created reusable ConfirmDialog component for delete confirmations
+- Added "in use" warning when deleting profiles assigned to candidates/interviews
+- Added CSS animations for modal enter/exit (fade-in, zoom-in-95)
+
+**Files created:**
+- src/components/ProfileModal.tsx - Create/Edit modal with form
+- src/components/ConfirmDialog.tsx - Reusable confirmation dialog
+
+**Files modified:**
+- src/pages/ProfileManager.tsx - Full implementation with table, CRUD operations
+- src/index.css - Added animation utilities and line-clamp
+
+**Codebase patterns learned:**
+- Use useCallback for event handlers passed to child components
+- Edit/delete buttons hidden by default, shown on row hover (opacity-0 group-hover:opacity-100)
+- Modal/dialog pattern: fixed overlay with backdrop blur + centered content
+- Async isProfileInUse check before showing delete dialog to display warning
+
+**Verified:**
+- npm run typecheck passes
+- Profile list displays seeded profiles correctly
+- Create Profile modal opens and creates new profiles
+- Edit Profile modal opens with pre-filled data
+- Delete confirmation dialog shows warning when profile is in use
+- All tested via agent-browser
+
+---
