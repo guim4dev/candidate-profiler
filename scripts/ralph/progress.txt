@@ -197,3 +197,28 @@ Task ID: T06
 - npm run typecheck passes
 
 ---
+
+## 2026-01-28 - T07: Candidate Detail View
+Thread: https://ampcode.com/threads/T-019c0661-7050-70ac-ae87-5f086465e534
+Task ID: T07
+- Enhanced CandidateDetail page with editable tags in header (click to edit, comma-separated input)
+- Added Overall Hire Signal dropdown selector in header
+- Created Profile Fit card with Primary Profile dropdown selector
+- Added Secondary Profiles as checkboxes that filter out primary profile
+- Profile description shows below primary profile selector
+- Existing interview timeline and CRUD functionality preserved
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added editable tags, hire signal selector, profile selectors
+
+**Codebase patterns learned:**
+- Inline editing pattern: isEditingTags state, Enter to save, Escape to cancel
+- Group hover for edit button: group/tags with opacity-0 group-hover/tags:opacity-100
+- Checkbox list for multi-select: label wrapping input with cursor-pointer and conditional border colors
+- Profile filtering: filter out primary from secondary profile options
+- updateCandidate hook used for all candidate field updates
+
+**Verified:**
+- npm run typecheck passes
+
+---

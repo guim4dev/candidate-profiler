@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useCandidate, useInterviews, createInterview, updateInterview, deleteInterview } from '../db/hooks';
+import { useCandidate, useInterviews, useProfiles, createInterview, updateInterview, deleteInterview, updateCandidate } from '../db/hooks';
 import { InterviewModal } from '../components/InterviewModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Interview, HireSignal } from '../types';
 import { INTERVIEW_TYPE_LABELS, HIRE_SIGNAL_LABELS } from '../types';
+
+const HIRE_SIGNALS: HireSignal[] = ['strong_yes', 'yes', 'neutral', 'no', 'strong_no'];
 
 function HireSignalBadge({ signal }: { signal?: HireSignal }) {
   if (!signal) {
@@ -53,12 +55,24 @@ export function CandidateDetail() {
   const navigate = useNavigate();
   const candidate = useCandidate(id);
   const interviews = useInterviews(id);
+  const profiles = useProfiles();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Interview | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  
+  // Tag editing state
+  const [isEditingTags, setIsEditingTags] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  // Build profile lookup map
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach(p => map.set(p.id, p.name));
+    return map;
+  }, [profiles]);
 
   const handleOpenCreate = useCallback(() => {
     setEditingInterview(undefined);
@@ -113,6 +127,55 @@ export function CandidateDetail() {
     }
   }, [deleteTarget, id]);
 
+  // Tag editing handlers
+  const handleStartEditTags = useCallback(() => {
+    if (candidate) {
+      setTagInput(candidate.tags.join(', '));
+      setIsEditingTags(true);
+    }
+  }, [candidate]);
+
+  const handleSaveTags = useCallback(async () => {
+    if (!id) return;
+    const newTags = tagInput
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
+    await updateCandidate(id, { tags: newTags });
+    setIsEditingTags(false);
+  }, [id, tagInput]);
+
+  const handleCancelEditTags = useCallback(() => {
+    setIsEditingTags(false);
+    setTagInput('');
+  }, []);
+
+  // Hire signal handler
+  const handleHireSignalChange = useCallback(async (signal: HireSignal | undefined) => {
+    if (!id) return;
+    await updateCandidate(id, { overall_hire_signal: signal });
+  }, [id]);
+
+  // Profile handlers
+  const handlePrimaryProfileChange = useCallback(async (profileId: string | undefined) => {
+    if (!id) return;
+    await updateCandidate(id, { primary_profile: profileId });
+  }, [id]);
+
+  const handleSecondaryProfilesChange = useCallback(async (profileIds: string[]) => {
+    if (!id) return;
+    await updateCandidate(id, { secondary_profiles: profileIds });
+  }, [id]);
+
+  const handleToggleSecondaryProfile = useCallback(async (profileId: string) => {
+    if (!id || !candidate) return;
+    const current = candidate.secondary_profiles || [];
+    const newProfiles = current.includes(profileId)
+      ? current.filter(p => p !== profileId)
+      : [...current, profileId];
+    await handleSecondaryProfilesChange(newProfiles);
+  }, [id, candidate, handleSecondaryProfilesChange]);
+
   if (candidate === undefined) {
     return (
       <div className="p-8">
@@ -157,34 +220,96 @@ export function CandidateDetail() {
             <span className="text-slate-900">{candidate.name}</span>
           </div>
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1">
               <h1 className="font-heading text-3xl font-semibold text-slate-900 tracking-tight">
                 {candidate.name}
               </h1>
-              {candidate.tags.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {candidate.tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700"
+              
+              {/* Editable Tags */}
+              <div className="mt-3">
+                {isEditingTags ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveTags();
+                        if (e.key === 'Escape') handleCancelEditTags();
+                      }}
+                      placeholder="frontend, senior, react (comma-separated)"
+                      className="flex-1 max-w-md rounded-lg border-surface-border text-sm focus:border-accent focus:ring-accent"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleSaveTags}
+                      className="p-1.5 rounded-lg text-accent hover:bg-accent/10 transition-colors"
+                      title="Save tags"
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            {candidate.overall_hire_signal && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500">Overall:</span>
-                <HireSignalBadge signal={candidate.overall_hire_signal} />
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={handleCancelEditTags}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                      title="Cancel"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="group/tags flex flex-wrap items-center gap-1.5">
+                    {candidate.tags.length > 0 ? (
+                      candidate.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-slate-400 italic">No tags</span>
+                    )}
+                    <button
+                      onClick={handleStartEditTags}
+                      className="ml-1 p-1 rounded-md text-slate-400 hover:text-accent hover:bg-accent/10 opacity-0 group-hover/tags:opacity-100 transition-all"
+                      title="Edit tags"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Overall Hire Signal Selector */}
+            <div className="flex items-center gap-3 ml-6">
+              <span className="text-sm text-slate-500">Overall Signal:</span>
+              <select
+                value={candidate.overall_hire_signal || ''}
+                onChange={(e) => handleHireSignalChange(e.target.value as HireSignal || undefined)}
+                className="rounded-lg border-surface-border text-sm focus:border-accent focus:ring-accent pr-8"
+              >
+                <option value="">Not Set</option>
+                {HIRE_SIGNALS.map((signal) => (
+                  <option key={signal} value={signal}>
+                    {HIRE_SIGNAL_LABELS[signal]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </header>
 
         <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-1">
+          <div className="col-span-1 space-y-6">
+            {/* Summary Card */}
             <div className="bg-white rounded-xl border border-surface-border shadow-sm p-6">
               <h2 className="font-heading text-lg font-medium text-slate-900 mb-4">
                 Summary
@@ -194,17 +319,82 @@ export function CandidateDetail() {
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Interviews</span>
                   <p className="mt-1 text-2xl font-semibold text-slate-900">{interviews.length}</p>
                 </div>
-                {candidate.primary_profile && (
-                  <div>
-                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Profile</span>
-                    <p className="mt-1 text-sm text-slate-700">{candidate.primary_profile}</p>
-                  </div>
-                )}
-                {!candidate.primary_profile && !candidate.overall_hire_signal && interviews.length === 0 && (
+                {interviews.length === 0 && (
                   <p className="text-slate-500 text-sm">
                     Add interviews to start building the candidate profile.
                   </p>
                 )}
+              </div>
+            </div>
+
+            {/* Profile Assignment Card */}
+            <div className="bg-white rounded-xl border border-surface-border shadow-sm p-6">
+              <h2 className="font-heading text-lg font-medium text-slate-900 mb-4">
+                Profile Fit
+              </h2>
+              <div className="space-y-5">
+                {/* Primary Profile */}
+                <div>
+                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-2">
+                    Primary Profile
+                  </label>
+                  <select
+                    value={candidate.primary_profile || ''}
+                    onChange={(e) => handlePrimaryProfileChange(e.target.value || undefined)}
+                    className="w-full rounded-lg border-surface-border text-sm focus:border-accent focus:ring-accent"
+                  >
+                    <option value="">Select profile...</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </select>
+                  {candidate.primary_profile && profileMap.get(candidate.primary_profile) && (
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      {profiles.find(p => p.id === candidate.primary_profile)?.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Secondary Profiles */}
+                <div>
+                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-2">
+                    Secondary Profiles
+                  </label>
+                  <div className="space-y-2">
+                    {profiles
+                      .filter(p => p.id !== candidate.primary_profile)
+                      .map((profile) => {
+                        const isSelected = candidate.secondary_profiles?.includes(profile.id);
+                        return (
+                          <label
+                            key={profile.id}
+                            className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-accent/30 bg-accent/5'
+                                : 'border-surface-border hover:border-slate-300'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSecondaryProfile(profile.id)}
+                              className="rounded border-slate-300 text-accent focus:ring-accent"
+                            />
+                            <span className={`text-sm ${isSelected ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>
+                              {profile.name}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    {profiles.length <= 1 && (
+                      <p className="text-sm text-slate-400 italic">
+                        No additional profiles available
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
