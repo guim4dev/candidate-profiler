@@ -249,3 +249,30 @@ Task ID: T08
 - npm run typecheck passes
 
 ---
+
+## 2026-01-28 - T09: Interview Comparison View
+Thread: https://ampcode.com/threads/T-019c0665-fb23-7031-8c2d-d98b2e827e96
+Task ID: T09
+- Created InterviewComparisonModal component with side-by-side axis scores table
+- Added interview selection checkboxes to CandidateDetail interview list
+- Added "Compare (N)" button that appears when 2-4 interviews selected
+- Implemented variance highlighting (≥2 difference shows red warning styling)
+- Shows interviewer names, dates, hire signals, average scores, and notes summary
+- Max 4 interviews can be selected for comparison
+
+**Files created:**
+- src/components/InterviewComparisonModal.tsx - Comparison modal with grid layout, variance detection
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added selection state, handlers, checkboxes, compare button, modal
+
+**Codebase patterns learned:**
+- Variance calculation: find min/max of axis scores across interviews, highlight if diff ≥ 2
+- Grid layout with dynamic columns: `gridTemplateColumns: \`200px repeat(\${count}, 1fr)\``
+- Selection limit pattern: check size < max || already selected before adding
+- ScoreBadge component with conditional ring styling for variance highlighting
+
+**Verified:**
+- npm run typecheck passes
+
+---

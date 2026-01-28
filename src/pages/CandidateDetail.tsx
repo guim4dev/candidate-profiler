@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useCandidate, useInterviews, useProfiles, createInterview, updateInterview, deleteInterview, updateCandidate } from '../db/hooks';
 import { InterviewModal } from '../components/InterviewModal';
+import { InterviewComparisonModal } from '../components/InterviewComparisonModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Interview, HireSignal } from '../types';
 import { INTERVIEW_TYPE_LABELS, HIRE_SIGNAL_LABELS } from '../types';
@@ -66,6 +67,10 @@ export function CandidateDetail() {
   // Tag editing state
   const [isEditingTags, setIsEditingTags] = useState(false);
   const [tagInput, setTagInput] = useState('');
+
+  // Comparison state
+  const [selectedInterviewIds, setSelectedInterviewIds] = useState<Set<string>>(new Set());
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // Build profile lookup map
   const profileMap = useMemo(() => {
@@ -175,6 +180,40 @@ export function CandidateDetail() {
       : [...current, profileId];
     await handleSecondaryProfilesChange(newProfiles);
   }, [id, candidate, handleSecondaryProfilesChange]);
+
+  // Interview comparison handlers
+  const handleToggleInterviewSelection = useCallback((interviewId: string) => {
+    setSelectedInterviewIds(prev => {
+      const next = new Set(prev);
+      if (next.has(interviewId)) {
+        next.delete(interviewId);
+      } else if (next.size < 4) {
+        next.add(interviewId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedInterviewIds(new Set());
+  }, []);
+
+  const handleOpenComparison = useCallback(() => {
+    if (selectedInterviewIds.size >= 2) {
+      setIsComparisonOpen(true);
+    }
+  }, [selectedInterviewIds.size]);
+
+  const handleCloseComparison = useCallback(() => {
+    setIsComparisonOpen(false);
+  }, []);
+
+  // Get selected interviews for comparison modal
+  const selectedInterviews = useMemo(() => {
+    return interviews.filter(i => selectedInterviewIds.has(i.id));
+  }, [interviews, selectedInterviewIds]);
+
+  const canCompare = selectedInterviewIds.size >= 2 && selectedInterviewIds.size <= 4;
 
   if (candidate === undefined) {
     return (
@@ -402,60 +441,114 @@ export function CandidateDetail() {
           <div className="col-span-2">
             <div className="bg-white rounded-xl border border-surface-border shadow-sm">
               <div className="px-6 py-5 border-b border-surface-border flex items-center justify-between">
-                <h2 className="font-heading text-lg font-medium text-slate-900">
-                  Interview Timeline
-                </h2>
-                <button onClick={handleOpenCreate} className="btn-primary text-sm">
-                  <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  Add Interview
-                </button>
+                <div className="flex items-center gap-4">
+                  <h2 className="font-heading text-lg font-medium text-slate-900">
+                    Interview Timeline
+                  </h2>
+                  {selectedInterviewIds.size > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-500">
+                        {selectedInterviewIds.size} selected
+                      </span>
+                      <button
+                        onClick={handleClearSelection}
+                        className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {canCompare && (
+                    <button
+                      onClick={handleOpenComparison}
+                      className="btn-secondary text-sm"
+                    >
+                      <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                      </svg>
+                      Compare ({selectedInterviewIds.size})
+                    </button>
+                  )}
+                  <button onClick={handleOpenCreate} className="btn-primary text-sm">
+                    <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Add Interview
+                  </button>
+                </div>
               </div>
 
               {hasInterviews ? (
                 <div className="divide-y divide-surface-border">
-                  {interviews.map((interview) => (
-                    <div key={interview.id} className="px-6 py-4 group hover:bg-slate-50 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-medium text-slate-900">{interview.interviewer_name}</span>
-                            <InterviewTypeBadge type={interview.interview_type} />
-                            <HireSignalBadge signal={interview.hire_signal} />
+                  {interviews.map((interview) => {
+                    const isSelected = selectedInterviewIds.has(interview.id);
+                    const canSelect = selectedInterviewIds.size < 4 || isSelected;
+                    
+                    return (
+                      <div 
+                        key={interview.id} 
+                        className={`
+                          px-6 py-4 group transition-colors
+                          ${isSelected ? 'bg-accent/5' : 'hover:bg-slate-50'}
+                        `}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Selection checkbox */}
+                          <div className="pt-0.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleInterviewSelection(interview.id)}
+                              disabled={!canSelect}
+                              className={`
+                                rounded border-slate-300 text-accent focus:ring-accent
+                                ${!canSelect ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                              `}
+                              title={!canSelect ? 'Maximum 4 interviews can be selected' : 'Select for comparison'}
+                            />
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-slate-500">
-                            <span>{format(new Date(interview.interview_date), 'MMM d, yyyy')}</span>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="font-medium text-slate-900">{interview.interviewer_name}</span>
+                              <InterviewTypeBadge type={interview.interview_type} />
+                              <HireSignalBadge signal={interview.hire_signal} />
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-slate-500">
+                              <span>{format(new Date(interview.interview_date), 'MMM d, yyyy')}</span>
+                            </div>
+                            {interview.notes_raw && (
+                              <p className="mt-2 text-sm text-slate-600 line-clamp-2">
+                                {interview.notes_raw}
+                              </p>
+                            )}
                           </div>
-                          {interview.notes_raw && (
-                            <p className="mt-2 text-sm text-slate-600 line-clamp-2">
-                              {interview.notes_raw}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-                          <button
-                            onClick={() => handleOpenEdit(interview)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                            title="Edit interview"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleOpenDelete(interview)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete interview"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                            </svg>
-                          </button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                            <button
+                              onClick={() => handleOpenEdit(interview)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                              title="Edit interview"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleOpenDelete(interview)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete interview"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="px-6 py-12 text-center">
@@ -500,6 +593,12 @@ export function CandidateDetail() {
         isLoading={isDeleting}
         onConfirm={isLastInterview ? () => setDeleteTarget(null) : handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <InterviewComparisonModal
+        interviews={selectedInterviews}
+        isOpen={isComparisonOpen}
+        onClose={handleCloseComparison}
       />
 
       {deleteError && (
