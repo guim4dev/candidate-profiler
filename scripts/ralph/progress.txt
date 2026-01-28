@@ -133,3 +133,40 @@ Task ID: T04
 - All tested via agent-browser
 
 ---
+
+## 2026-01-28 - T05: Interview CRUD
+Thread: https://ampcode.com/threads/T-019c065b-7923-705e-a79d-2840e07ad4af
+Task ID: T05
+- Created InterviewModal component with core fields (interviewer_name, interview_date, interview_type, notes_raw, hire_signal)
+- Updated CandidateDetail page with full interview timeline list and CRUD operations
+- Interview list shows interviewer name, type badge, hire signal badge, date, and notes preview
+- Add Interview button opens modal, creates interview linked to candidate
+- Edit Interview pre-fills modal with existing data, shows "Update Interview" button
+- Delete Interview shows confirmation dialog with warning when it's the last interview
+- Added InterviewTypeBadge component with color-coded styles per interview type
+- Reused HireSignalBadge and ConfirmDialog components
+
+**Files created:**
+- src/components/InterviewModal.tsx - Create/Edit modal with interviewer, date, type, notes, hire signal
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Full implementation with interview timeline, CRUD, loading/not-found states
+
+**Codebase patterns learned:**
+- Interview modal uses default axis_scores (all 3s) and empty axis_notes for new interviews
+- Delete interview uses deleteInterview hook which throws error if last interview
+- ConfirmDialog warning prop shows "cannot delete" message for last interview
+- InterviewTypeBadge uses same pattern as HireSignalBadge (Record<Type, string> for styles)
+- Loading state: animate-pulse skeleton placeholders
+- Not-found state: centered message with "Back to Candidates" button
+
+**Verified:**
+- npm run typecheck passes
+- CandidateDetail shows "No interviews yet" empty state
+- Add Interview modal opens with core fields
+- Interview appears in timeline after creation with all badges
+- Edit Interview modal pre-fills existing data
+- Delete shows warning when trying to delete last interview
+- All tested via agent-browser
+
+---
