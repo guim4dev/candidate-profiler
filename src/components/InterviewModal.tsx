@@ -89,12 +89,10 @@ function ScoreSelector({
 }
 
 function CollapsibleAxisNotes({
-  axis,
   label,
   note,
   onNoteChange,
 }: {
-  axis: Axis;
   label: string;
   note: string;
   onNoteChange: (note: string) => void;
@@ -185,7 +183,7 @@ export function InterviewModal({ interview, candidateId, isOpen, onClose, onSave
     }
   }, [isOpen, interview]);
 
-  const handleAxisScoreChange = useCallback((axis: Axis, score: number) => {
+  const handleAxisScoreChange = useCallback((axis: Axis, score: number | undefined) => {
     setAxisScores(prev => ({ ...prev, [axis]: score }));
   }, []);
 
@@ -200,12 +198,6 @@ export function InterviewModal({ interview, candidateId, isOpen, onClose, onSave
         : [...prev, profileId]
     );
   }, []);
-
-  const profileMap = useMemo(() => {
-    const map = new Map<string, string>();
-    profiles.forEach(p => map.set(p.id, p.name));
-    return map;
-  }, [profiles]);
 
   if (!isOpen) return null;
 
@@ -430,7 +422,6 @@ export function InterviewModal({ interview, candidateId, isOpen, onClose, onSave
                           />
                         </div>
                         <CollapsibleAxisNotes
-                          axis={axis}
                           label={AXIS_LABELS[axis]}
                           note={axisNotes[axis]}
                           onNoteChange={(note) => handleAxisNoteChange(axis, note)}
