@@ -305,3 +305,32 @@ Task ID: T10
 - npm run typecheck passes
 
 ---
+
+## 2026-01-29 - T11: AI Prompt - Candidate Summary
+Thread: https://ampcode.com/threads/T-019c0669-634d-759e-93e7-4b141f56d3fb
+Task ID: T11
+- Created CandidateSummaryPromptModal component for multi-interview prompt generation
+- Added "AI Prompt (All)" button in Interview Timeline header (only shows when interviews exist)
+- Prompt includes: candidate overview, signal conflict detection, aggregate axis scores with variance indicators
+- Detects conflicting hire signals (spread ≥2 = moderate, spread ≥3 = significant conflict)
+- Shows individual interview details with scores, notes, and per-interviewer breakdown
+- Requests holistic AI analysis: consensus strengths/concerns, signal reconciliation, role fit, risk assessment, final recommendation
+- Button uses subtle violet gradient styling to match AI theme
+- Shows interview count in modal footer alongside character/word count
+
+**Files created:**
+- src/components/CandidateSummaryPromptModal.tsx - Multi-interview prompt modal with conflict detection
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added summary prompt button, state, handlers, modal integration
+
+**Codebase patterns learned:**
+- HIRE_SIGNAL_ORDER constant maps signals to numeric values for conflict detection
+- detectSignalConflicts: compare min/max signal values, flag if spread ≥2
+- calculateAxisStats: compute avg/min/max/variance for aggregate display
+- Subtle gradient button: from-violet-500/10 to-indigo-500/10 with border-violet-200
+
+**Verified:**
+- npm run typecheck passes
+
+---
