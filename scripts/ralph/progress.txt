@@ -276,3 +276,32 @@ Task ID: T09
 - npm run typecheck passes
 
 ---
+
+## 2026-01-29 - T10: AI Prompt - Single Interview
+Thread: https://ampcode.com/threads/T-019c0669-634d-759e-93e7-4b141f56d3fb
+Task ID: T10
+- Created AIPromptModal component with generated prompt preview and copy functionality
+- Created Toast component for clipboard copy success notification
+- Added "Copy AI Prompt" button (sparkles icon) to interview row hover actions
+- Prompt includes: interview metadata, 5 axis scores with notes, hire signal, general notes
+- Prompt requests AI analysis: strengths, areas for development, red flags, role fit, follow-up questions
+- Shows character count and word count in modal footer
+- Violet/indigo gradient theming for AI-related UI elements
+
+**Files created:**
+- src/components/AIPromptModal.tsx - Prompt preview modal with copy to clipboard
+- src/components/Toast.tsx - Reusable toast notification component
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added AI prompt button, state handlers, modal + toast integration
+
+**Codebase patterns learned:**
+- Prompt generation: array of lines joined with \n for structured Markdown output
+- SCORE_DESCRIPTIONS constant maps 1-5 scores to descriptive labels for prompt context
+- Toast pattern: isLeaving state for exit animation before onHide callback
+- AI/magic features use violet-500 to indigo-600 gradient to differentiate from accent green
+
+**Verified:**
+- npm run typecheck passes
+
+---

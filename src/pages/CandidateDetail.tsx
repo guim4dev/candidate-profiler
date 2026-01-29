@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import { useCandidate, useInterviews, useProfiles, createInterview, updateInterview, deleteInterview, updateCandidate } from '../db/hooks';
 import { InterviewModal } from '../components/InterviewModal';
 import { InterviewComparisonModal } from '../components/InterviewComparisonModal';
+import { AIPromptModal } from '../components/AIPromptModal';
+import { Toast } from '../components/Toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Interview, HireSignal } from '../types';
 import { INTERVIEW_TYPE_LABELS, HIRE_SIGNAL_LABELS } from '../types';
@@ -71,6 +73,11 @@ export function CandidateDetail() {
   // Comparison state
   const [selectedInterviewIds, setSelectedInterviewIds] = useState<Set<string>>(new Set());
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+
+  // AI Prompt state
+  const [aiPromptInterview, setAiPromptInterview] = useState<Interview | null>(null);
+  const [isAiPromptOpen, setIsAiPromptOpen] = useState(false);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   // Build profile lookup map
   const profileMap = useMemo(() => {
@@ -206,6 +213,25 @@ export function CandidateDetail() {
 
   const handleCloseComparison = useCallback(() => {
     setIsComparisonOpen(false);
+  }, []);
+
+  // AI Prompt handlers
+  const handleOpenAiPrompt = useCallback((interview: Interview) => {
+    setAiPromptInterview(interview);
+    setIsAiPromptOpen(true);
+  }, []);
+
+  const handleCloseAiPrompt = useCallback(() => {
+    setIsAiPromptOpen(false);
+    setAiPromptInterview(null);
+  }, []);
+
+  const handleCopiedToast = useCallback(() => {
+    setShowCopiedToast(true);
+  }, []);
+
+  const handleHideToast = useCallback(() => {
+    setShowCopiedToast(false);
   }, []);
 
   // Get selected interviews for comparison modal
@@ -527,6 +553,15 @@ export function CandidateDetail() {
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
                             <button
+                              onClick={() => handleOpenAiPrompt(interview)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                              title="Copy AI prompt"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+                              </svg>
+                            </button>
+                            <button
                               onClick={() => handleOpenEdit(interview)}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                               title="Edit interview"
@@ -599,6 +634,20 @@ export function CandidateDetail() {
         interviews={selectedInterviews}
         isOpen={isComparisonOpen}
         onClose={handleCloseComparison}
+      />
+
+      <AIPromptModal
+        interview={aiPromptInterview}
+        candidateName={candidate?.name || ''}
+        isOpen={isAiPromptOpen}
+        onClose={handleCloseAiPrompt}
+        onCopied={handleCopiedToast}
+      />
+
+      <Toast
+        message="Copied to clipboard"
+        isVisible={showCopiedToast}
+        onHide={handleHideToast}
       />
 
       {deleteError && (
