@@ -16,11 +16,11 @@ const HIRE_SIGNALS: HireSignal[] = ['strong_yes', 'yes', 'neutral', 'no', 'stron
 const AXES: Axis[] = ['technical_depth', 'learning_growth', 'business_awareness', 'autonomy_ownership', 'collaboration_communication'];
 
 const DEFAULT_AXIS_SCORES: Interview['axis_scores'] = {
-  technical_depth: 3,
-  learning_growth: 3,
-  business_awareness: 3,
-  autonomy_ownership: 3,
-  collaboration_communication: 3,
+  technical_depth: undefined,
+  learning_growth: undefined,
+  business_awareness: undefined,
+  autonomy_ownership: undefined,
+  collaboration_communication: undefined,
 };
 
 const DEFAULT_AXIS_NOTES: Interview['axis_notes'] = {
@@ -44,40 +44,46 @@ function ScoreSelector({
   onChange, 
   axisLabel 
 }: { 
-  value: number; 
-  onChange: (v: number) => void; 
+  value: number | undefined; 
+  onChange: (v: number | undefined) => void; 
   axisLabel: string;
 }) {
   return (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((score) => {
         const isSelected = score === value;
-        const isFilled = score <= value;
+        const isFilled = value !== undefined && score <= value;
         return (
           <button
             key={score}
             type="button"
-            onClick={() => onChange(score)}
+            onClick={() => onChange(isSelected ? undefined : score)}
             className={`
               relative w-8 h-8 rounded-full transition-all duration-200 
               flex items-center justify-center text-xs font-semibold
               focus:outline-none focus:ring-2 focus:ring-accent/50 focus:ring-offset-1
               ${isFilled 
-                ? `${SCORE_LABELS[value].color} text-white shadow-sm` 
+                ? `${SCORE_LABELS[value!].color} text-white shadow-sm` 
                 : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
               }
               ${isSelected ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : ''}
             `}
-            title={`${axisLabel}: ${score} - ${SCORE_LABELS[score].label}`}
+            title={`${axisLabel}: ${score} - ${SCORE_LABELS[score].label}${isSelected ? ' (click to clear)' : ''}`}
             aria-label={`Score ${score} of 5: ${SCORE_LABELS[score].label}`}
           >
             {score}
           </button>
         );
       })}
-      <span className={`ml-2 text-xs font-medium px-2 py-0.5 rounded-full ${SCORE_LABELS[value].color} text-white`}>
-        {SCORE_LABELS[value].label}
-      </span>
+      {value !== undefined ? (
+        <span className={`ml-2 text-xs font-medium px-2 py-0.5 rounded-full ${SCORE_LABELS[value].color} text-white`}>
+          {SCORE_LABELS[value].label}
+        </span>
+      ) : (
+        <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">
+          Not scored
+        </span>
+      )}
     </div>
   );
 }

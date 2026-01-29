@@ -43,11 +43,18 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   lines.push('## Evaluation Scores');
   lines.push('');
   
+  const unscoredAxes: Axis[] = [];
+  
   AXES.forEach(axis => {
     const score = interview.axis_scores[axis];
     const note = interview.axis_notes[axis];
     lines.push(`### ${AXIS_LABELS[axis]}`);
-    lines.push(`**Score:** ${score}/5 (${SCORE_DESCRIPTIONS[score]})`);
+    if (score !== undefined) {
+      lines.push(`**Score:** ${score}/5 (${SCORE_DESCRIPTIONS[score]})`);
+    } else {
+      lines.push(`**Score:** _Not scored_`);
+      unscoredAxes.push(axis);
+    }
     if (note) {
       lines.push(`**Notes:** ${note}`);
     }
@@ -70,24 +77,27 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   lines.push('');
   lines.push('Based on the above interview feedback, please provide:');
   lines.push('');
-  lines.push('1. **Key Strengths:** What does this candidate excel at?');
-  lines.push('2. **Areas for Development:** What skills or behaviors need improvement?');
-  lines.push('3. **Red Flags:** Are there any concerning patterns or signals?');
-  lines.push('4. **Role Fit Assessment:** How well does this candidate align with typical expectations for this role?');
-  lines.push('5. **Suggested Follow-up Questions:** What should future interviewers explore?');
-  lines.push('6. **Profile Recommendation:** Based on the interview feedback, which of these profiles best fits this candidate? Recommend a primary profile and optionally 1-2 secondary profiles:');
+  let itemNum = 1;
+  lines.push(`${itemNum++}. **Key Strengths:** What does this candidate excel at?`);
+  lines.push(`${itemNum++}. **Areas for Development:** What skills or behaviors need improvement?`);
+  lines.push(`${itemNum++}. **Red Flags:** Are there any concerning patterns or signals?`);
+  lines.push(`${itemNum++}. **Role Fit Assessment:** How well does this candidate align with typical expectations for this role?`);
+  lines.push(`${itemNum++}. **Suggested Follow-up Questions:** What should future interviewers explore?`);
+  lines.push(`${itemNum++}. **Profile Recommendation:** Based on the interview feedback, which of these profiles best fits this candidate? Recommend a primary profile and optionally 1-2 secondary profiles:`);
   lines.push('   - **Builder:** Thrives in ambiguity, ships fast, owns outcomes end-to-end');
   lines.push('   - **Specialist:** Deep expertise in a specific domain, technical excellence');
   lines.push('   - **Leader:** Guides teams, multiplies others, strategic thinker');
   lines.push('   - **Generalist:** Versatile, adaptable, connects across domains');
   lines.push('   - **Learner:** High growth potential, absorbs quickly, coachable');
-  lines.push('7. **Suggested Axis Scores:** Based on the interview notes and feedback, suggest appropriate scores (1-5) for each evaluation axis:');
-  lines.push('   - Technical Depth (1=Poor, 3=Meets Expectations, 5=Exceptional)');
-  lines.push('   - Learning & Growth');
-  lines.push('   - Business/Product Awareness');
-  lines.push('   - Autonomy & Ownership');
-  lines.push('   - Collaboration & Communication');
-  lines.push('8. **Summary Recommendation:** A brief 2-3 sentence overall assessment.');
+  
+  if (unscoredAxes.length > 0) {
+    lines.push(`${itemNum++}. **Suggested Axis Scores:** Based on the interview notes and feedback, suggest appropriate scores (1-5) for the following unscored axes:`);
+    unscoredAxes.forEach(axis => {
+      lines.push(`   - ${AXIS_LABELS[axis]} (1=Poor, 3=Meets Expectations, 5=Exceptional)`);
+    });
+  }
+  
+  lines.push(`${itemNum++}. **Summary Recommendation:** A brief 2-3 sentence overall assessment.`);
   
   return lines.join('\n');
 }

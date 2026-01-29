@@ -27,7 +27,7 @@ export interface Interview {
   interview_date: string;
   interview_type: InterviewType;
   notes_raw: string;
-  axis_scores: Record<Axis, number>;
+  axis_scores: Record<Axis, number | undefined>;
   axis_notes: Record<Axis, string>;
   primary_profile?: string;
   secondary_profiles: string[];

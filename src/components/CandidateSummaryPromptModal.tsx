@@ -54,12 +54,15 @@ function detectSignalConflicts(interviews: Interview[]): { hasConflict: boolean;
   return { hasConflict: false, description: '' };
 }
 
-function calculateAxisStats(interviews: Interview[], axis: Axis): { avg: number; min: number; max: number; variance: number } {
-  const scores = interviews.map(i => i.axis_scores[axis]);
+function calculateAxisStats(interviews: Interview[], axis: Axis): { avg: number | null; min: number | null; max: number | null; variance: number; scoredCount: number } {
+  const scores = interviews.map(i => i.axis_scores[axis]).filter((s): s is number => s !== undefined);
+  if (scores.length === 0) {
+    return { avg: null, min: null, max: null, variance: 0, scoredCount: 0 };
+  }
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
   const min = Math.min(...scores);
   const max = Math.max(...scores);
-  return { avg: Math.round(avg * 10) / 10, min, max, variance: max - min };
+  return { avg: Math.round(avg * 10) / 10, min, max, variance: max - min, scoredCount: scores.length };
 }
 
 function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): string {
@@ -105,19 +108,30 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   lines.push('## Aggregate Evaluation Scores');
   lines.push('');
 
+  const unscoredAxes: Axis[] = [];
+
   AXES.forEach(axis => {
     const stats = calculateAxisStats(interviews, axis);
     const hasVariance = stats.variance >= 2;
     
     lines.push(`### ${AXIS_LABELS[axis]}`);
-    lines.push(`**Average:** ${stats.avg}/5 (${SCORE_DESCRIPTIONS[Math.round(stats.avg)]})`);
-    lines.push(`**Range:** ${stats.min} - ${stats.max}${hasVariance ? ' ⚠️ HIGH VARIANCE' : ''}`);
+    if (stats.avg !== null) {
+      lines.push(`**Average:** ${stats.avg}/5 (${SCORE_DESCRIPTIONS[Math.round(stats.avg)]})`);
+      lines.push(`**Range:** ${stats.min} - ${stats.max}${hasVariance ? ' ⚠️ HIGH VARIANCE' : ''}`);
+      if (stats.scoredCount < interviews.length) {
+        lines.push(`_Note: Only ${stats.scoredCount} of ${interviews.length} interviews scored this axis._`);
+      }
+    } else {
+      lines.push(`**Score:** _No interviewers scored this axis_`);
+      unscoredAxes.push(axis);
+    }
     
     // Show individual scores if there's variance
     if (hasVariance) {
       lines.push('**Individual scores:**');
       interviews.forEach(interview => {
-        lines.push(`  - ${interview.interviewer_name}: ${interview.axis_scores[axis]}/5`);
+        const score = interview.axis_scores[axis];
+        lines.push(`  - ${interview.interviewer_name}: ${score !== undefined ? `${score}/5` : 'Not scored'}`);
       });
     }
     lines.push('');
@@ -140,7 +154,8 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
     AXES.forEach(axis => {
       const score = interview.axis_scores[axis];
       const note = interview.axis_notes[axis];
-      lines.push(`- ${AXIS_LABELS[axis]}: ${score}/5${note ? ` — "${note}"` : ''}`);
+      const scoreText = score !== undefined ? `${score}/5` : '_Not scored_';
+      lines.push(`- ${AXIS_LABELS[axis]}: ${scoreText}${note ? ` — "${note}"` : ''}`);
     });
     lines.push('');
     
@@ -158,26 +173,29 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   lines.push('');
   lines.push('Based on all interview feedback above, please provide:');
   lines.push('');
-  lines.push('1. **Consensus Strengths:** What do multiple interviewers agree the candidate excels at?');
-  lines.push('2. **Consensus Concerns:** What areas of concern appear across multiple interviews?');
-  lines.push('3. **Conflicting Assessments:** Where do interviewers disagree, and what might explain the differences?');
-  lines.push('4. **Signal Reconciliation:** How should the different hire signals be weighted and reconciled?');
-  lines.push('5. **Role Fit Summary:** Based on the aggregate feedback, what types of roles/teams would this candidate thrive in?');
-  lines.push('6. **Risk Assessment:** What are the key risks of hiring this candidate?');
-  lines.push('7. **Profile Recommendation:** Based on all interviews, which profile best fits this candidate? Recommend a primary profile and optionally 1-2 secondary profiles:');
+  let itemNum = 1;
+  lines.push(`${itemNum++}. **Consensus Strengths:** What do multiple interviewers agree the candidate excels at?`);
+  lines.push(`${itemNum++}. **Consensus Concerns:** What areas of concern appear across multiple interviews?`);
+  lines.push(`${itemNum++}. **Conflicting Assessments:** Where do interviewers disagree, and what might explain the differences?`);
+  lines.push(`${itemNum++}. **Signal Reconciliation:** How should the different hire signals be weighted and reconciled?`);
+  lines.push(`${itemNum++}. **Role Fit Summary:** Based on the aggregate feedback, what types of roles/teams would this candidate thrive in?`);
+  lines.push(`${itemNum++}. **Risk Assessment:** What are the key risks of hiring this candidate?`);
+  lines.push(`${itemNum++}. **Profile Recommendation:** Based on all interviews, which profile best fits this candidate? Recommend a primary profile and optionally 1-2 secondary profiles:`);
   lines.push('   - **Builder:** Thrives in ambiguity, ships fast, owns outcomes end-to-end');
   lines.push('   - **Specialist:** Deep expertise in a specific domain, technical excellence');
   lines.push('   - **Leader:** Guides teams, multiplies others, strategic thinker');
   lines.push('   - **Generalist:** Versatile, adaptable, connects across domains');
   lines.push('   - **Learner:** High growth potential, absorbs quickly, coachable');
-  lines.push('8. **Overall Axis Scores:** Based on all interview feedback, suggest consolidated scores (1-5) for each evaluation axis. Weight and reconcile any disagreements:');
-  lines.push('   - Technical Depth (1=Poor, 3=Meets Expectations, 5=Exceptional)');
-  lines.push('   - Learning & Growth');
-  lines.push('   - Business/Product Awareness');
-  lines.push('   - Autonomy & Ownership');
-  lines.push('   - Collaboration & Communication');
-  lines.push('9. **Overall Hire Signal:** Recommend a final hire signal (Strong No / No / Neutral / Yes / Strong Yes) with brief justification.');
-  lines.push('10. **Final Recommendation:** Provide a clear hire/no-hire recommendation with confidence level and key reasoning.');
+  
+  if (unscoredAxes.length > 0) {
+    lines.push(`${itemNum++}. **Suggested Axis Scores:** Based on the interview notes and feedback, suggest scores (1-5) for the following unscored axes:`);
+    unscoredAxes.forEach(axis => {
+      lines.push(`   - ${AXIS_LABELS[axis]} (1=Poor, 3=Meets Expectations, 5=Exceptional)`);
+    });
+  }
+  
+  lines.push(`${itemNum++}. **Overall Hire Signal:** Recommend a final hire signal (Strong No / No / Neutral / Yes / Strong Yes) with brief justification.`);
+  lines.push(`${itemNum++}. **Final Recommendation:** Provide a clear hire/no-hire recommendation with confidence level and key reasoning.`);
 
   return lines.join('\n');
 }

@@ -27,7 +27,20 @@ const HIRE_SIGNAL_STYLES: Record<string, string> = {
   strong_no: 'bg-red-100 text-red-800 border-red-200',
 };
 
-function ScoreBadge({ score, hasVariance }: { score: number; hasVariance?: boolean }) {
+function ScoreBadge({ score, hasVariance }: { score: number | undefined; hasVariance?: boolean }) {
+  if (score === undefined) {
+    return (
+      <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-slate-50">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200 text-slate-400 font-bold text-lg">
+          —
+        </div>
+        <span className="text-xs font-medium text-slate-400">
+          Not scored
+        </span>
+      </div>
+    );
+  }
+  
   const { label, color } = SCORE_LABELS[score];
   return (
     <div className={`
@@ -48,25 +61,33 @@ function ScoreBadge({ score, hasVariance }: { score: number; hasVariance?: boole
 }
 
 export function InterviewComparisonModal({ interviews, isOpen, onClose }: InterviewComparisonModalProps) {
-  // Calculate variance for each axis
+  // Calculate variance for each axis (only for scored interviews)
   const axisVariance = useMemo(() => {
     const result: Record<Axis, number> = {} as Record<Axis, number>;
     AXES.forEach(axis => {
-      const scores = interviews.map(i => i.axis_scores[axis]);
-      const min = Math.min(...scores);
-      const max = Math.max(...scores);
-      result[axis] = max - min;
+      const scores = interviews.map(i => i.axis_scores[axis]).filter((s): s is number => s !== undefined);
+      if (scores.length < 2) {
+        result[axis] = 0;
+      } else {
+        const min = Math.min(...scores);
+        const max = Math.max(...scores);
+        result[axis] = max - min;
+      }
     });
     return result;
   }, [interviews]);
 
-  // Calculate average scores per axis
+  // Calculate average scores per axis (only for scored interviews)
   const axisAverages = useMemo(() => {
-    const result: Record<Axis, number> = {} as Record<Axis, number>;
+    const result: Record<Axis, number | null> = {} as Record<Axis, number | null>;
     AXES.forEach(axis => {
-      const scores = interviews.map(i => i.axis_scores[axis]);
-      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      result[axis] = Math.round(avg * 10) / 10;
+      const scores = interviews.map(i => i.axis_scores[axis]).filter((s): s is number => s !== undefined);
+      if (scores.length === 0) {
+        result[axis] = null;
+      } else {
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        result[axis] = Math.round(avg * 10) / 10;
+      }
     });
     return result;
   }, [interviews]);
@@ -155,7 +176,7 @@ export function InterviewComparisonModal({ interviews, isOpen, onClose }: Interv
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-slate-500">
-                          Avg: {axisAverages[axis].toFixed(1)}
+                          {axisAverages[axis] !== null ? `Avg: ${axisAverages[axis]!.toFixed(1)}` : 'No scores'}
                         </span>
                         {hasSignificantVariance && (
                           <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
