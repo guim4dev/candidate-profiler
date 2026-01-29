@@ -164,7 +164,20 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   lines.push('4. **Signal Reconciliation:** How should the different hire signals be weighted and reconciled?');
   lines.push('5. **Role Fit Summary:** Based on the aggregate feedback, what types of roles/teams would this candidate thrive in?');
   lines.push('6. **Risk Assessment:** What are the key risks of hiring this candidate?');
-  lines.push('7. **Final Recommendation:** Provide a clear hire/no-hire recommendation with confidence level and key reasoning.');
+  lines.push('7. **Profile Recommendation:** Based on all interviews, which profile best fits this candidate? Recommend a primary profile and optionally 1-2 secondary profiles:');
+  lines.push('   - **Builder:** Thrives in ambiguity, ships fast, owns outcomes end-to-end');
+  lines.push('   - **Specialist:** Deep expertise in a specific domain, technical excellence');
+  lines.push('   - **Leader:** Guides teams, multiplies others, strategic thinker');
+  lines.push('   - **Generalist:** Versatile, adaptable, connects across domains');
+  lines.push('   - **Learner:** High growth potential, absorbs quickly, coachable');
+  lines.push('8. **Overall Axis Scores:** Based on all interview feedback, suggest consolidated scores (1-5) for each evaluation axis. Weight and reconcile any disagreements:');
+  lines.push('   - Technical Depth (1=Poor, 3=Meets Expectations, 5=Exceptional)');
+  lines.push('   - Learning & Growth');
+  lines.push('   - Business/Product Awareness');
+  lines.push('   - Autonomy & Ownership');
+  lines.push('   - Collaboration & Communication');
+  lines.push('9. **Overall Hire Signal:** Recommend a final hire signal (Strong No / No / Neutral / Yes / Strong Yes) with brief justification.');
+  lines.push('10. **Final Recommendation:** Provide a clear hire/no-hire recommendation with confidence level and key reasoning.');
 
   return lines.join('\n');
 }

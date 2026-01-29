@@ -75,7 +75,19 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   lines.push('3. **Red Flags:** Are there any concerning patterns or signals?');
   lines.push('4. **Role Fit Assessment:** How well does this candidate align with typical expectations for this role?');
   lines.push('5. **Suggested Follow-up Questions:** What should future interviewers explore?');
-  lines.push('6. **Summary Recommendation:** A brief 2-3 sentence overall assessment.');
+  lines.push('6. **Profile Recommendation:** Based on the interview feedback, which of these profiles best fits this candidate? Recommend a primary profile and optionally 1-2 secondary profiles:');
+  lines.push('   - **Builder:** Thrives in ambiguity, ships fast, owns outcomes end-to-end');
+  lines.push('   - **Specialist:** Deep expertise in a specific domain, technical excellence');
+  lines.push('   - **Leader:** Guides teams, multiplies others, strategic thinker');
+  lines.push('   - **Generalist:** Versatile, adaptable, connects across domains');
+  lines.push('   - **Learner:** High growth potential, absorbs quickly, coachable');
+  lines.push('7. **Suggested Axis Scores:** Based on the interview notes and feedback, suggest appropriate scores (1-5) for each evaluation axis:');
+  lines.push('   - Technical Depth (1=Poor, 3=Meets Expectations, 5=Exceptional)');
+  lines.push('   - Learning & Growth');
+  lines.push('   - Business/Product Awareness');
+  lines.push('   - Autonomy & Ownership');
+  lines.push('   - Collaboration & Communication');
+  lines.push('8. **Summary Recommendation:** A brief 2-3 sentence overall assessment.');
   
   return lines.join('\n');
 }
