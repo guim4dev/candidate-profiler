@@ -81,3 +81,19 @@ Task ID: 30
   - Pass state via `navigate()` second argument: `{ state: { ... }, replace: true }`
   - Toast variant pattern: add optional `variant` prop with 'success' | 'error'
 ---
+
+## 2026-01-30 - Build AutoUpdatePreviewModal component
+Thread: https://ampcode.com/threads/T-019c0f90-dfc8-7343-9f79-77eb6cba06ba
+Task ID: 31
+- Created `src/components/AutoUpdatePreviewModal.tsx` with diff-style display
+- Shows current vs proposed values for all payload fields
+- DiffValue component: red strikethrough for removed, green highlight for added
+- Supports both candidate-level (profiles, hire_signal, tags) and interview-level (axis_scores, axis_notes) updates
+- computeChanges() builds FieldChange array from payload comparison
+- Uses violet-to-indigo gradient styling consistent with other AI modals
+- Props: payload, candidate, interview, profileMap, isOpen, onClose, onApply
+- **Learnings:**
+  - Pass profileMap from CandidateDetail for name lookups
+  - Interview is optional - only used when interviewId is in payload
+  - onApply is async to handle database operations
+---
