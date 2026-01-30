@@ -39,3 +39,16 @@ Task ID: 29
   - Use `atob()`/`btoa()` for base64 encoding/decoding in browser
   - Validate axis_scores values are numbers 1-5
 ---
+
+## 2026-01-30 - Update CandidateSummaryPromptModal with URL template
+Thread: https://ampcode.com/threads/T-019c0f8b-e519-730f-bc00-665160a8393e
+Task ID: 34
+- Added auto-update URL template section to `generateSummaryPrompt()` function
+- Imports `generateAutoUpdateUrl` from utils
+- Template includes: format explanation, JSON payload fields, instructions, and example URL
+- Example uses the actual candidate ID for valid URLs
+- Lists all supported fields: primary_profile, secondary_profiles, overall_hire_signal, tags
+- **Learnings:**
+  - Use `as const` for literal type inference in example payloads
+  - `window.location.origin` needs SSR guard (`typeof window !== 'undefined'`)
+---

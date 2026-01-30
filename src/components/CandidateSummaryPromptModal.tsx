@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState } from 'react';
 import { format } from 'date-fns';
 import type { Interview, Axis, HireSignal, Candidate } from '../types';
 import { AXIS_LABELS, HIRE_SIGNAL_LABELS, INTERVIEW_TYPE_LABELS } from '../types';
+import { generateAutoUpdateUrl } from '../utils/autoUpdateUrl';
 
 interface CandidateSummaryPromptModalProps {
   candidate: Candidate | null;
@@ -196,6 +197,45 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   
   lines.push(`${itemNum++}. **Overall Hire Signal:** Recommend a final hire signal (Strong No / No / Neutral / Yes / Strong Yes) with brief justification.`);
   lines.push(`${itemNum++}. **Final Recommendation:** Provide a clear hire/no-hire recommendation with confidence level and key reasoning.`);
+
+  // Auto-update URL template section
+  const examplePayload = {
+    candidateId: candidate.id,
+    primary_profile: 'builder',
+    secondary_profiles: ['specialist'],
+    overall_hire_signal: 'yes' as const,
+    tags: ['strong-technical', 'growth-potential'],
+  };
+  const exampleUrl = generateAutoUpdateUrl(examplePayload);
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : '{APP_URL}';
+
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('## Auto-Update URL');
+  lines.push('');
+  lines.push('After your analysis, generate a clickable URL to apply your recommendations directly to the candidate profile:');
+  lines.push('');
+  lines.push(`**Format:** \`${appUrl}/#/apply?data={BASE64_JSON}\``);
+  lines.push('');
+  lines.push('**JSON payload fields:**');
+  lines.push(`- \`candidateId\`: "${candidate.id}" (required, do not change)`);
+  lines.push('- `primary_profile`: "builder" | "specialist" | "leader" | "generalist" | "learner"');
+  lines.push('- `secondary_profiles`: ["profile1", "profile2"] (optional array)');
+  lines.push('- `overall_hire_signal`: "strong_no" | "no" | "neutral" | "yes" | "strong_yes"');
+  lines.push('- `tags`: ["tag1", "tag2"] (optional array of descriptive tags)');
+  lines.push('');
+  lines.push('**Instructions:**');
+  lines.push('1. Create a JSON object with your recommendations');
+  lines.push('2. Base64-encode the JSON string');
+  lines.push('3. Append it to the URL as the `data` parameter');
+  lines.push('');
+  lines.push('**Example:**');
+  lines.push(`\`\`\`json`);
+  lines.push(JSON.stringify(examplePayload, null, 2));
+  lines.push(`\`\`\``);
+  lines.push('');
+  lines.push(`[Click to apply recommendations](${exampleUrl})`);
 
   return lines.join('\n');
 }
