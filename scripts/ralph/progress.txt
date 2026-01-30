@@ -24,3 +24,18 @@ Task ID: 28
 - Reuses existing `Axis` and `HireSignal` types
 - **Learnings:** Axis and HireSignal types already defined - use `Partial<Record<Axis, T>>` for sparse axis data
 ---
+
+## 2026-01-30 - Create URL parser/generator utilities
+Thread: https://ampcode.com/threads/T-019c0f8a-3aba-7494-b0bf-faff6f22d8a7
+Task ID: 29
+- Created `src/utils/autoUpdateUrl.ts` with `parseAutoUpdateUrl()` and `generateAutoUpdateUrl()` functions
+- URL format: `{origin}/#/apply?data={base64EncodedJSON}`
+- Parser extracts data from hash query params, decodes base64, validates JSON structure
+- Validates: candidateId (required), interviewId, primary_profile, secondary_profiles, overall_hire_signal, axis_scores (1-5), axis_notes, tags
+- Returns null for malformed URLs, invalid base64, or failed validation
+- Generator uses `window.location.origin` for SPA compatibility
+- **Learnings:** 
+  - Use `new URL()` then parse hash manually for hash-based routing params
+  - Use `atob()`/`btoa()` for base64 encoding/decoding in browser
+  - Validate axis_scores values are numbers 1-5
+---
