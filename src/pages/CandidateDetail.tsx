@@ -1,15 +1,17 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useCandidate, useInterviews, useProfiles, createInterview, updateInterview, deleteInterview, updateCandidate } from '../db/hooks';
+import { useCandidate, useInterviews, useProfiles, useInterview, createInterview, updateInterview, deleteInterview, updateCandidate } from '../db/hooks';
 import { InterviewModal } from '../components/InterviewModal';
 import { InterviewComparisonModal } from '../components/InterviewComparisonModal';
 import { AIPromptModal } from '../components/AIPromptModal';
 import { CandidateSummaryPromptModal } from '../components/CandidateSummaryPromptModal';
+import { AutoUpdatePreviewModal } from '../components/AutoUpdatePreviewModal';
 import { Toast } from '../components/Toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Interview, HireSignal } from '../types';
+import type { Interview, HireSignal, AutoUpdatePayload } from '../types';
 import { INTERVIEW_TYPE_LABELS, HIRE_SIGNAL_LABELS } from '../types';
+import type { AutoUpdateRouteState } from './ApplyRoute';
 
 const HIRE_SIGNALS: HireSignal[] = ['strong_yes', 'yes', 'neutral', 'no', 'strong_no'];
 
@@ -57,9 +59,29 @@ function InterviewTypeBadge({ type }: { type: Interview['interview_type'] }) {
 export function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const candidate = useCandidate(id);
   const interviews = useInterviews(id);
   const profiles = useProfiles();
+
+  // Auto-update state
+  const [autoUpdatePayload, setAutoUpdatePayload] = useState<AutoUpdatePayload | null>(null);
+  const [isAutoUpdateOpen, setIsAutoUpdateOpen] = useState(false);
+  const [showAppliedToast, setShowAppliedToast] = useState(false);
+
+  // Fetch interview for auto-update if interviewId is present
+  const autoUpdateInterview = useInterview(autoUpdatePayload?.interviewId);
+
+  // Check for auto-update payload from route state
+  useEffect(() => {
+    const routeState = location.state as AutoUpdateRouteState | null;
+    if (routeState?.autoUpdatePayload) {
+      setAutoUpdatePayload(routeState.autoUpdatePayload);
+      setIsAutoUpdateOpen(true);
+      // Clear the route state to prevent re-opening on navigation
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | undefined>();
@@ -243,6 +265,66 @@ export function CandidateDetail() {
   const handleHideToast = useCallback(() => {
     setShowCopiedToast(false);
   }, []);
+
+  const handleHideAppliedToast = useCallback(() => {
+    setShowAppliedToast(false);
+  }, []);
+
+  // Auto-update handlers
+  const handleCloseAutoUpdate = useCallback(() => {
+    setIsAutoUpdateOpen(false);
+    setAutoUpdatePayload(null);
+  }, []);
+
+  const handleApplyAutoUpdate = useCallback(async () => {
+    if (!autoUpdatePayload || !id) return;
+
+    // Apply candidate-level updates
+    const candidateUpdates: Parameters<typeof updateCandidate>[1] = {};
+    
+    if (autoUpdatePayload.primary_profile !== undefined) {
+      candidateUpdates.primary_profile = autoUpdatePayload.primary_profile;
+    }
+    if (autoUpdatePayload.secondary_profiles !== undefined) {
+      candidateUpdates.secondary_profiles = autoUpdatePayload.secondary_profiles;
+    }
+    if (autoUpdatePayload.overall_hire_signal !== undefined) {
+      candidateUpdates.overall_hire_signal = autoUpdatePayload.overall_hire_signal;
+    }
+    if (autoUpdatePayload.tags !== undefined) {
+      candidateUpdates.tags = autoUpdatePayload.tags;
+    }
+
+    // Apply candidate updates if any
+    if (Object.keys(candidateUpdates).length > 0) {
+      await updateCandidate(id, candidateUpdates);
+    }
+
+    // Apply interview-level updates if interviewId is present
+    if (autoUpdatePayload.interviewId) {
+      const interviewUpdates: Parameters<typeof updateInterview>[2] = {};
+      
+      if (autoUpdatePayload.axis_scores !== undefined) {
+        // Merge with existing scores
+        const existingScores = autoUpdateInterview?.axis_scores || {};
+        interviewUpdates.axis_scores = { ...existingScores, ...autoUpdatePayload.axis_scores };
+      }
+      if (autoUpdatePayload.axis_notes !== undefined) {
+        // Merge with existing notes
+        const existingNotes = autoUpdateInterview?.axis_notes || {};
+        interviewUpdates.axis_notes = { ...existingNotes, ...autoUpdatePayload.axis_notes };
+      }
+
+      if (Object.keys(interviewUpdates).length > 0) {
+        await updateInterview(autoUpdatePayload.interviewId, id, interviewUpdates);
+      }
+    }
+
+    // Close modal and show success toast
+    setIsAutoUpdateOpen(false);
+    setAutoUpdatePayload(null);
+    setShowAppliedToast(true);
+  }, [autoUpdatePayload, id, autoUpdateInterview]);
 
   // Get selected interviews for comparison modal
   const selectedInterviews = useMemo(() => {
@@ -673,10 +755,26 @@ export function CandidateDetail() {
         onCopied={handleCopiedToast}
       />
 
+      <AutoUpdatePreviewModal
+        payload={autoUpdatePayload}
+        candidate={candidate}
+        interview={autoUpdateInterview}
+        profileMap={profileMap}
+        isOpen={isAutoUpdateOpen}
+        onClose={handleCloseAutoUpdate}
+        onApply={handleApplyAutoUpdate}
+      />
+
       <Toast
         message="Copied to clipboard"
         isVisible={showCopiedToast}
         onHide={handleHideToast}
+      />
+
+      <Toast
+        message="Changes applied successfully"
+        isVisible={showAppliedToast}
+        onHide={handleHideAppliedToast}
       />
 
       {deleteError && (

@@ -97,3 +97,23 @@ Task ID: 31
   - Interview is optional - only used when interviewId is in payload
   - onApply is async to handle database operations
 ---
+
+## 2026-01-30 - Integrate AutoUpdatePreviewModal into CandidateDetail
+Thread: https://ampcode.com/threads/T-019c0f93-8b96-73fe-9dcf-aea69502e637
+Task ID: 32
+- Imported AutoUpdatePreviewModal, AutoUpdateRouteState, and useInterview hook
+- Added state: autoUpdatePayload, isAutoUpdateOpen, showAppliedToast
+- useEffect reads route state from ApplyRoute and opens modal if payload present
+- Clears route state after reading to prevent re-opening on navigation
+- handleApplyAutoUpdate applies candidate-level and interview-level updates:
+  - Candidate: primary_profile, secondary_profiles, overall_hire_signal, tags
+  - Interview: axis_scores, axis_notes (merged with existing values)
+- Uses updateCandidate(id, data) and updateInterview(interviewId, candidateId, data)
+- Shows success toast after applying, closes modal
+- Added separate Toast for "Changes applied successfully"
+- **Learnings:**
+  - useInterview(id) fetches interview reactively by ID
+  - updateInterview takes 3 params: (id, candidateId, data)
+  - Clear route state with navigate(pathname, { replace: true, state: null })
+  - Partial updates: merge with existing axis_scores/axis_notes using spread operator
+---
