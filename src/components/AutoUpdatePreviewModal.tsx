@@ -7,6 +7,7 @@ interface AutoUpdatePreviewModalProps {
   candidate: Candidate | null;
   interview?: Interview | null;
   profileMap: Map<string, string>;
+  slugMap: Map<string, string>;
   isOpen: boolean;
   onClose: () => void;
   onApply: () => Promise<void>;
@@ -33,6 +34,17 @@ function formatProfiles(profileIds: string[] | undefined, profileMap: Map<string
   return profileIds.map(id => profileMap.get(id) || id).join(', ');
 }
 
+function formatProfileSlugOrId(slugOrId: string | undefined, profileMap: Map<string, string>, slugMap: Map<string, string>): string | null {
+  if (!slugOrId) return null;
+  // Try ID first, then slug
+  return profileMap.get(slugOrId) || slugMap.get(slugOrId) || slugOrId;
+}
+
+function formatProfileSlugsOrIds(slugsOrIds: string[] | undefined, profileMap: Map<string, string>, slugMap: Map<string, string>): string | null {
+  if (!slugsOrIds || slugsOrIds.length === 0) return null;
+  return slugsOrIds.map(s => profileMap.get(s) || slugMap.get(s) || s).join(', ');
+}
+
 function formatTags(tags: string[] | undefined): string | null {
   if (!tags || tags.length === 0) return null;
   return tags.join(', ');
@@ -47,7 +59,8 @@ function computeChanges(
   payload: AutoUpdatePayload,
   candidate: Candidate,
   interview: Interview | null | undefined,
-  profileMap: Map<string, string>
+  profileMap: Map<string, string>,
+  slugMap: Map<string, string>
 ): FieldChange[] {
   const changes: FieldChange[] = [];
 
@@ -57,7 +70,7 @@ function computeChanges(
       field: 'primary_profile',
       label: 'Primary Profile',
       currentValue: formatProfile(candidate.primary_profile, profileMap),
-      proposedValue: profileMap.get(payload.primary_profile) || payload.primary_profile,
+      proposedValue: formatProfileSlugOrId(payload.primary_profile, profileMap, slugMap) || 'None',
     });
   }
 
@@ -66,7 +79,7 @@ function computeChanges(
       field: 'secondary_profiles',
       label: 'Secondary Profiles',
       currentValue: formatProfiles(candidate.secondary_profiles, profileMap),
-      proposedValue: formatProfiles(payload.secondary_profiles, profileMap) || 'None',
+      proposedValue: formatProfileSlugsOrIds(payload.secondary_profiles, profileMap, slugMap) || 'None',
     });
   }
 
@@ -157,6 +170,7 @@ export function AutoUpdatePreviewModal({
   candidate,
   interview,
   profileMap,
+  slugMap,
   isOpen,
   onClose,
   onApply,
@@ -165,8 +179,8 @@ export function AutoUpdatePreviewModal({
 
   const changes = useMemo(() => {
     if (!payload || !candidate) return [];
-    return computeChanges(payload, candidate, interview, profileMap);
-  }, [payload, candidate, interview, profileMap]);
+    return computeChanges(payload, candidate, interview, profileMap, slugMap);
+  }, [payload, candidate, interview, profileMap, slugMap]);
 
   const handleApply = useCallback(async () => {
     if (isApplying) return;

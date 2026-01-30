@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useCandidate, useInterviews, useProfiles, useInterview, createInterview, updateInterview, deleteInterview, updateCandidate } from '../db/hooks';
+import { useCandidate, useInterviews, useProfiles, useInterview, createInterview, updateInterview, deleteInterview, updateCandidate, getProfileIdBySlugOrId } from '../db/hooks';
 import { InterviewModal } from '../components/InterviewModal';
 import { InterviewComparisonModal } from '../components/InterviewComparisonModal';
 import { AIPromptModal } from '../components/AIPromptModal';
@@ -124,10 +124,16 @@ export function CandidateDetail() {
   const [isSummaryPromptOpen, setIsSummaryPromptOpen] = useState(false);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
 
-  // Build profile lookup map
+  // Build profile lookup maps (by ID and by slug)
   const profileMap = useMemo(() => {
     const map = new Map<string, string>();
     profiles.forEach(p => map.set(p.id, p.name));
+    return map;
+  }, [profiles]);
+
+  const slugMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach(p => map.set(p.slug, p.name));
     return map;
   }, [profiles]);
 
@@ -307,12 +313,26 @@ export function CandidateDetail() {
     // Apply candidate-level updates
     const candidateUpdates: Parameters<typeof updateCandidate>[1] = {};
     
+    // Resolve primary_profile slug to ID
     if (autoUpdatePayload.primary_profile !== undefined) {
-      candidateUpdates.primary_profile = autoUpdatePayload.primary_profile;
+      const profileId = await getProfileIdBySlugOrId(autoUpdatePayload.primary_profile);
+      if (profileId) {
+        candidateUpdates.primary_profile = profileId;
+      }
     }
+    
+    // Resolve secondary_profiles slugs to IDs
     if (autoUpdatePayload.secondary_profiles !== undefined) {
-      candidateUpdates.secondary_profiles = autoUpdatePayload.secondary_profiles;
+      const resolvedIds: string[] = [];
+      for (const slugOrId of autoUpdatePayload.secondary_profiles) {
+        const profileId = await getProfileIdBySlugOrId(slugOrId);
+        if (profileId) {
+          resolvedIds.push(profileId);
+        }
+      }
+      candidateUpdates.secondary_profiles = resolvedIds;
     }
+    
     if (autoUpdatePayload.overall_hire_signal !== undefined) {
       candidateUpdates.overall_hire_signal = autoUpdatePayload.overall_hire_signal;
     }
@@ -767,6 +787,7 @@ export function CandidateDetail() {
       <AIPromptModal
         interview={aiPromptInterview}
         candidateName={candidate?.name || ''}
+        profiles={profiles}
         isOpen={isAiPromptOpen}
         onClose={handleCloseAiPrompt}
         onCopied={handleCopiedToast}
@@ -775,6 +796,7 @@ export function CandidateDetail() {
       <CandidateSummaryPromptModal
         candidate={candidate}
         interviews={interviews}
+        profiles={profiles}
         isOpen={isSummaryPromptOpen}
         onClose={handleCloseSummaryPrompt}
         onCopied={handleCopiedToast}
@@ -785,6 +807,7 @@ export function CandidateDetail() {
         candidate={candidate}
         interview={autoUpdateInterview}
         profileMap={profileMap}
+        slugMap={slugMap}
         isOpen={isAutoUpdateOpen}
         onClose={handleCloseAutoUpdate}
         onApply={handleApplyAutoUpdate}

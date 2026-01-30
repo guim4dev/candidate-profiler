@@ -1,12 +1,13 @@
 import { useMemo, useCallback, useState } from 'react';
 import { format } from 'date-fns';
-import type { Interview, Axis, HireSignal, Candidate } from '../types';
+import type { Interview, Axis, HireSignal, Candidate, Profile } from '../types';
 import { AXIS_LABELS, HIRE_SIGNAL_LABELS, INTERVIEW_TYPE_LABELS } from '../types';
 import { generateAutoUpdateUrl } from '../utils/autoUpdateUrl';
 
 interface CandidateSummaryPromptModalProps {
   candidate: Candidate | null;
   interviews: Interview[];
+  profiles: Profile[];
   isOpen: boolean;
   onClose: () => void;
   onCopied: () => void;
@@ -66,7 +67,7 @@ function calculateAxisStats(interviews: Interview[], axis: Axis): { avg: number 
   return { avg: Math.round(avg * 10) / 10, min, max, variance: max - min, scoredCount: scores.length };
 }
 
-function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): string {
+function generateSummaryPrompt(candidate: Candidate, interviews: Interview[], profiles: Profile[]): string {
   const lines: string[] = [];
   const signalConflict = detectSignalConflicts(interviews);
 
@@ -199,10 +200,14 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   lines.push(`${itemNum++}. **Final Recommendation:** Provide a clear hire/no-hire recommendation with confidence level and key reasoning.`);
 
   // Auto-update URL template section
+  const profileSlugs = profiles.map(p => p.slug);
+  const firstSlug = profileSlugs[0] || 'generalist';
+  const secondSlug = profileSlugs[1] || 'specialist';
+  
   const examplePayload = {
     candidateId: candidate.id,
-    primary_profile: 'builder',
-    secondary_profiles: ['specialist'],
+    primary_profile: firstSlug,
+    secondary_profiles: profileSlugs.length > 1 ? [secondSlug] : [],
     overall_hire_signal: 'yes' as const,
     tags: ['strong-technical', 'growth-potential'],
   };
@@ -218,10 +223,15 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   lines.push('');
   lines.push(`**Format:** \`${appUrl}/apply?data={BASE64_JSON}\``);
   lines.push('');
+  lines.push('**Available profile slugs:**');
+  profiles.forEach(p => {
+    lines.push(`- \`${p.slug}\` - ${p.name}${p.description ? ` (${p.description})` : ''}`);
+  });
+  lines.push('');
   lines.push('**JSON payload fields:**');
   lines.push(`- \`candidateId\`: "${candidate.id}" (required, do not change)`);
-  lines.push('- `primary_profile`: "builder" | "specialist" | "leader" | "generalist" | "learner"');
-  lines.push('- `secondary_profiles`: ["profile1", "profile2"] (optional array)');
+  lines.push(`- \`primary_profile\`: profile slug (one of: ${profileSlugs.map(s => `"${s}"`).join(' | ')})`);
+  lines.push('- `secondary_profiles`: ["slug1", "slug2"] (optional array of profile slugs)');
   lines.push('- `overall_hire_signal`: "strong_no" | "no" | "neutral" | "yes" | "strong_yes"');
   lines.push('- `tags`: ["tag1", "tag2"] (optional array of descriptive tags)');
   lines.push('');
@@ -240,13 +250,13 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   return lines.join('\n');
 }
 
-export function CandidateSummaryPromptModal({ candidate, interviews, isOpen, onClose, onCopied }: CandidateSummaryPromptModalProps) {
+export function CandidateSummaryPromptModal({ candidate, interviews, profiles, isOpen, onClose, onCopied }: CandidateSummaryPromptModalProps) {
   const [isCopying, setIsCopying] = useState(false);
 
   const promptText = useMemo(() => {
     if (!candidate || interviews.length === 0) return '';
-    return generateSummaryPrompt(candidate, interviews);
-  }, [candidate, interviews]);
+    return generateSummaryPrompt(candidate, interviews, profiles);
+  }, [candidate, interviews, profiles]);
 
   const signalConflict = useMemo(() => {
     return detectSignalConflicts(interviews);

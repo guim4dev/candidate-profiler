@@ -1,12 +1,13 @@
 import { useMemo, useCallback, useState } from 'react';
 import { format } from 'date-fns';
-import type { Interview, Axis } from '../types';
+import type { Interview, Axis, Profile } from '../types';
 import { AXIS_LABELS, HIRE_SIGNAL_LABELS, INTERVIEW_TYPE_LABELS } from '../types';
 import { generateAutoUpdateUrl } from '../utils/autoUpdateUrl';
 
 interface AIPromptModalProps {
   interview: Interview | null;
   candidateName: string;
+  profiles: Profile[];
   isOpen: boolean;
   onClose: () => void;
   onCopied: () => void;
@@ -22,7 +23,7 @@ const SCORE_DESCRIPTIONS: Record<number, string> = {
   5: 'Exceptional - Outstanding performance',
 };
 
-function generatePrompt(interview: Interview, candidateName: string): string {
+function generatePrompt(interview: Interview, candidateName: string, profiles: Profile[]): string {
   const lines: string[] = [];
   
   lines.push('# Interview Analysis Request');
@@ -101,11 +102,15 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   lines.push(`${itemNum++}. **Summary Recommendation:** A brief 2-3 sentence overall assessment.`);
 
   // Auto-update URL template section
+  const profileSlugs = profiles.map(p => p.slug);
+  const firstSlug = profileSlugs[0] || 'generalist';
+  const secondSlug = profileSlugs[1] || 'specialist';
+  
   const examplePayload = {
     candidateId: interview.candidate_id,
     interviewId: interview.id,
-    primary_profile: 'builder',
-    secondary_profiles: ['specialist'],
+    primary_profile: firstSlug,
+    secondary_profiles: profileSlugs.length > 1 ? [secondSlug] : [],
     axis_scores: {
       technical_depth: 4,
       collaboration_communication: 5,
@@ -126,11 +131,16 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   lines.push('');
   lines.push(`**Format:** \`${appUrl}/apply?data={BASE64_JSON}\``);
   lines.push('');
+  lines.push('**Available profile slugs:**');
+  profiles.forEach(p => {
+    lines.push(`- \`${p.slug}\` - ${p.name}${p.description ? ` (${p.description})` : ''}`);
+  });
+  lines.push('');
   lines.push('**JSON payload fields:**');
   lines.push(`- \`candidateId\`: "${interview.candidate_id}" (required, do not change)`);
   lines.push(`- \`interviewId\`: "${interview.id}" (required for interview-specific updates)`);
-  lines.push('- `primary_profile`: "builder" | "specialist" | "leader" | "generalist" | "learner"');
-  lines.push('- `secondary_profiles`: ["profile1", "profile2"] (optional array)');
+  lines.push(`- \`primary_profile\`: profile slug (one of: ${profileSlugs.map(s => `"${s}"`).join(' | ')})`);
+  lines.push('- `secondary_profiles`: ["slug1", "slug2"] (optional array of profile slugs)');
   lines.push('- `axis_scores`: { "technical_depth": 1-5, "learning_growth": 1-5, ... } (partial updates allowed)');
   lines.push('- `axis_notes`: { "technical_depth": "note text", ... } (optional notes per axis)');
   lines.push('');
@@ -149,13 +159,13 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   return lines.join('\n');
 }
 
-export function AIPromptModal({ interview, candidateName, isOpen, onClose, onCopied }: AIPromptModalProps) {
+export function AIPromptModal({ interview, candidateName, profiles, isOpen, onClose, onCopied }: AIPromptModalProps) {
   const [isCopying, setIsCopying] = useState(false);
   
   const promptText = useMemo(() => {
     if (!interview) return '';
-    return generatePrompt(interview, candidateName);
-  }, [interview, candidateName]);
+    return generatePrompt(interview, candidateName, profiles);
+  }, [interview, candidateName, profiles]);
   
   const characterCount = promptText.length;
   const wordCount = promptText.split(/\s+/).filter(Boolean).length;

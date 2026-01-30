@@ -37,6 +37,7 @@ export interface Interview {
 
 export interface Profile {
   id: string;
+  slug: string;
   name: string;
   description: string;
   created_at: string;

@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './index';
 import type { Candidate, Interview, Profile } from '../types';
+import { generateSlug, generateUniqueSlug } from '../utils/slug';
 
 // ============================================================================
 // Profile Hooks
@@ -18,10 +19,39 @@ export function useProfile(id: string | undefined) {
   );
 }
 
+export function useProfileBySlug(slug: string | undefined) {
+  return useLiveQuery(
+    () => (slug ? db.profiles.where('slug').equals(slug).first() : undefined),
+    [slug]
+  );
+}
+
+export async function getProfileBySlug(slug: string): Promise<Profile | undefined> {
+  return db.profiles.where('slug').equals(slug).first();
+}
+
+export async function getProfileIdBySlugOrId(slugOrId: string): Promise<string | undefined> {
+  // First try as ID
+  const byId = await db.profiles.get(slugOrId);
+  if (byId) return byId.id;
+  
+  // Then try as slug
+  const bySlug = await db.profiles.where('slug').equals(slugOrId).first();
+  return bySlug?.id;
+}
+
 export async function createProfile(data: Pick<Profile, 'name' | 'description'>): Promise<string> {
   const now = new Date().toISOString();
+  
+  // Generate unique slug
+  const existingProfiles = await db.profiles.toArray();
+  const existingSlugs = new Set(existingProfiles.map(p => p.slug));
+  const baseSlug = generateSlug(data.name);
+  const slug = generateUniqueSlug(baseSlug, existingSlugs);
+  
   const profile: Profile = {
     id: crypto.randomUUID(),
+    slug,
     name: data.name,
     description: data.description,
     created_at: now,
@@ -32,10 +62,22 @@ export async function createProfile(data: Pick<Profile, 'name' | 'description'>)
 }
 
 export async function updateProfile(id: string, data: Partial<Pick<Profile, 'name' | 'description'>>): Promise<void> {
-  await db.profiles.update(id, {
+  const updates: Partial<Profile> = {
     ...data,
     updated_at: new Date().toISOString(),
-  });
+  };
+  
+  // If name is changing, regenerate slug
+  if (data.name) {
+    const existingProfiles = await db.profiles.toArray();
+    const existingSlugs = new Set(
+      existingProfiles.filter(p => p.id !== id).map(p => p.slug)
+    );
+    const baseSlug = generateSlug(data.name);
+    updates.slug = generateUniqueSlug(baseSlug, existingSlugs);
+  }
+  
+  await db.profiles.update(id, updates);
 }
 
 export async function deleteProfile(id: string): Promise<void> {
