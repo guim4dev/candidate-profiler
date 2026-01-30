@@ -5,6 +5,7 @@ import { CandidateList } from './pages/CandidateList';
 import { CandidateDetail } from './pages/CandidateDetail';
 import { ProfileManager } from './pages/ProfileManager';
 import { Settings } from './pages/Settings';
+import { ApplyRoute } from './pages/ApplyRoute';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="candidates/:id" element={<CandidateDetail />} />
             <Route path="profiles" element={<ProfileManager />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="apply" element={<ApplyRoute />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -5,9 +5,10 @@ interface ToastProps {
   isVisible: boolean;
   onHide: () => void;
   duration?: number;
+  variant?: 'success' | 'error';
 }
 
-export function Toast({ message, isVisible, onHide, duration = 2500 }: ToastProps) {
+export function Toast({ message, isVisible, onHide, duration = 2500, variant = 'success' }: ToastProps) {
   const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
@@ -34,9 +35,15 @@ export function Toast({ message, isVisible, onHide, duration = 2500 }: ToastProp
         ${isLeaving ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0 animate-in fade-in zoom-in-95'}
       `}
     >
-      <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-      </svg>
+      {variant === 'success' ? (
+        <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+      )}
       {message}
     </div>
   );

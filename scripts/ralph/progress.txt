@@ -66,3 +66,18 @@ Task ID: 33
   - Interview has `candidate_id` (snake_case) for accessing the parent candidate
   - For interview updates, both candidateId and interviewId are required in the payload
 ---
+
+## 2026-01-30 - Add /apply route handler
+Thread: https://ampcode.com/threads/T-019c0f8e-aa54-76dd-8802-2d706c884f0b
+Task ID: 30
+- Created `src/pages/ApplyRoute.tsx` component to handle auto-update URLs
+- Added `/apply` route in `src/App.tsx`
+- Parses URL using `parseAutoUpdateUrl()`, redirects to candidate detail with payload in route state
+- Invalid URLs show error toast and redirect to home
+- Added `variant` prop to Toast component for error styling (red icon)
+- Exports `AutoUpdateRouteState` interface for CandidateDetail to consume
+- **Learnings:**
+  - Use `useLocation()` + `window.location.href` to get full URL including hash
+  - Pass state via `navigate()` second argument: `{ state: { ... }, replace: true }`
+  - Toast variant pattern: add optional `variant` prop with 'success' | 'error'
+---
