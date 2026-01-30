@@ -216,7 +216,7 @@ function generateSummaryPrompt(candidate: Candidate, interviews: Interview[]): s
   lines.push('');
   lines.push('After your analysis, generate a clickable URL to apply your recommendations directly to the candidate profile:');
   lines.push('');
-  lines.push(`**Format:** \`${appUrl}/#/apply?data={BASE64_JSON}\``);
+  lines.push(`**Format:** \`${appUrl}/apply?data={BASE64_JSON}\``);
   lines.push('');
   lines.push('**JSON payload fields:**');
   lines.push(`- \`candidateId\`: "${candidate.id}" (required, do not change)`);

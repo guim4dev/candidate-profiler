@@ -17,21 +17,13 @@ export function parseAutoUpdateUrl(url: string): AutoUpdatePayload | null {
   try {
     const urlObj = new URL(url);
     
-    // Extract data from hash query params (format: /#/apply?data=...)
-    const hashPart = urlObj.hash;
-    if (!hashPart.includes('/apply')) {
+    // Check if this is an /apply route
+    if (!urlObj.pathname.includes('/apply')) {
       return null;
     }
     
-    // Parse query params from hash
-    const queryStart = hashPart.indexOf('?');
-    if (queryStart === -1) {
-      return null;
-    }
-    
-    const queryString = hashPart.slice(queryStart + 1);
-    const params = new URLSearchParams(queryString);
-    const data = params.get('data');
+    // Get data from query params
+    const data = urlObj.searchParams.get('data');
     
     if (!data) {
       return null;
@@ -144,5 +136,5 @@ export function generateAutoUpdateUrl(payload: AutoUpdatePayload): string {
   const json = JSON.stringify(payload);
   const base64 = btoa(json);
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}/#/apply?data=${base64}`;
+  return `${origin}/apply?data=${base64}`;
 }

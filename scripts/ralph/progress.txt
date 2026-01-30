@@ -136,3 +136,17 @@ Task ID: 35
   - Use setTimeout to allow async query to complete before checking for "not found"
   - Toast variant="error" shows red icon instead of green checkmark
 ---
+
+## 2026-01-30 - Fix URL format (BrowserRouter not HashRouter)
+Thread: https://ampcode.com/threads/T-019c0f96-53d0-71df-af88-f6393a4fd82e
+Task ID: 35 (additional fix)
+- Fixed URL generation and parsing - app uses BrowserRouter, not HashRouter
+- Changed `generateAutoUpdateUrl()` to produce `/apply?data=...` (no hash)
+- Updated `parseAutoUpdateUrl()` to use `urlObj.pathname` and `urlObj.searchParams`
+- Updated template text in AIPromptModal and CandidateSummaryPromptModal
+- Browser tested: URL redirects to candidate detail and shows preview modal correctly
+- **Learnings:**
+  - Check router type (BrowserRouter vs HashRouter) when generating URLs
+  - BrowserRouter uses pathname, HashRouter uses hash fragment
+  - For BrowserRouter, use `urlObj.searchParams.get('data')` directly
+---
