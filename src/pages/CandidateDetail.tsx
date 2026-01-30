@@ -9,7 +9,7 @@ import { CandidateSummaryPromptModal } from '../components/CandidateSummaryPromp
 import { AutoUpdatePreviewModal } from '../components/AutoUpdatePreviewModal';
 import { Toast } from '../components/Toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import type { Interview, HireSignal, AutoUpdatePayload } from '../types';
+import type { Interview, HireSignal, AutoUpdatePayload, Axis } from '../types';
 import { INTERVIEW_TYPE_LABELS, HIRE_SIGNAL_LABELS } from '../types';
 import type { AutoUpdateRouteState } from './ApplyRoute';
 
@@ -352,12 +352,12 @@ export function CandidateDetail() {
       if (autoUpdatePayload.axis_scores !== undefined) {
         // Merge with existing scores
         const existingScores = autoUpdateInterview?.axis_scores || {};
-        interviewUpdates.axis_scores = { ...existingScores, ...autoUpdatePayload.axis_scores };
+        interviewUpdates.axis_scores = { ...existingScores, ...autoUpdatePayload.axis_scores } as Record<Axis, number | undefined>;
       }
       if (autoUpdatePayload.axis_notes !== undefined) {
         // Merge with existing notes
         const existingNotes = autoUpdateInterview?.axis_notes || {};
-        interviewUpdates.axis_notes = { ...existingNotes, ...autoUpdatePayload.axis_notes };
+        interviewUpdates.axis_notes = { ...existingNotes, ...autoUpdatePayload.axis_notes } as Record<Axis, string>;
       }
 
       if (Object.keys(interviewUpdates).length > 0) {

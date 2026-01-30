@@ -1,7 +1,8 @@
 import { db } from './index';
 import type { Profile } from '../types';
+import { generateSlug } from '../utils/slug';
 
-const DEFAULT_PROFILES: Omit<Profile, 'id' | 'created_at' | 'updated_at'>[] = [
+const DEFAULT_PROFILES: Omit<Profile, 'id' | 'slug' | 'created_at' | 'updated_at'>[] = [
   {
     name: 'Builder',
     description: 'Hands-on engineer who loves creating things from scratch. Strong execution skills, thrives in fast-paced environments with ambiguity.',
@@ -35,6 +36,7 @@ export async function seedDefaultProfiles(): Promise<void> {
   const profiles: Profile[] = DEFAULT_PROFILES.map((profile) => ({
     ...profile,
     id: crypto.randomUUID(),
+    slug: generateSlug(profile.name),
     created_at: now,
     updated_at: now,
   }));
