@@ -74,3 +74,14 @@ export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
   founder: 'Founder',
   other: 'Other',
 };
+
+export interface AutoUpdatePayload {
+  candidateId: string;
+  interviewId?: string;
+  primary_profile?: string;
+  secondary_profiles?: string[];
+  overall_hire_signal?: HireSignal;
+  axis_scores?: Partial<Record<Axis, number>>;
+  axis_notes?: Partial<Record<Axis, string>>;
+  tags?: string[];
+}

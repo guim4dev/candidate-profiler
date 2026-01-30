@@ -1,0 +1,336 @@
+# Ralph Progress Log
+Started: 2026-01-28
+Feature: Candidate Profiler - Full Implementation
+
+## Codebase Patterns
+- Tailwind v4 with @tailwindcss/vite plugin (no separate config file)
+- Custom colors: sidebar, accent, surface defined in @theme block in index.css
+- Custom fonts: font-heading (DM Sans), font-body (IBM Plex Sans)
+- Component classes: .nav-link, .btn-primary, .btn-secondary defined in @layer components
+
+---
+
+## 2026-01-28 - T01: Project Setup
+Thread: https://ampcode.com/threads/T-019c064f-244a-70f8-9788-46f4abee2faf
+Task ID: T01
+- Initialized Vite + React 19 + TypeScript project
+- Installed Tailwind CSS v4 with @tailwindcss/forms plugin via @tailwindcss/vite
+- Installed dependencies: dexie, react-router-dom, date-fns, uuid
+- Created folder structure: src/{components,pages,db,utils,types,hooks}
+- Set up React Router with routes: /, /candidates, /candidates/:id, /profiles, /settings
+- Created Layout with dark sidebar (#0f172a) and refined editorial aesthetic
+- Created skeleton pages: CandidateList, CandidateDetail, ProfileManager, Settings
+- Defined TypeScript types in src/types/index.ts
+- Created AGENTS.md with project conventions
+
+**Files created:**
+- package.json, vite.config.ts, index.html
+- src/main.tsx, src/App.tsx, src/index.css
+- src/components/Layout.tsx, src/components/Sidebar.tsx
+- src/pages/CandidateList.tsx, CandidateDetail.tsx, ProfileManager.tsx, Settings.tsx
+- src/types/index.ts
+- AGENTS.md
+
+**Verified:**
+- npm run typecheck passes
+- Dev server runs at http://localhost:5173
+- Navigation between all routes works (verified via agent-browser)
+
+---
+
+## 2026-01-28 - T02: IndexedDB Schema & Data Layer
+Thread: https://ampcode.com/threads/T-019c0653-b579-72fc-aeaf-e1bd04e5f190
+Task ID: T02
+- Set up Dexie database in src/db/index.ts with stores: candidates, interviews, profiles, settings
+- Created CRUD hooks in src/db/hooks.ts: useProfiles, useCandidates, useInterviews (with all CRUD operations)
+- Implemented default profile seeding (Builder, Specialist, Leader, Generalist, Learner)
+- Added DatabaseProvider component for initialization and error handling
+- Installed dexie-react-hooks for reactive queries
+
+**Files created:**
+- src/db/index.ts - Dexie database setup with schema
+- src/db/hooks.ts - React hooks for CRUD operations using useLiveQuery
+- src/db/seed.ts - Default profile seeding logic
+- src/db/DatabaseProvider.tsx - Initialization and error boundary
+
+**Files modified:**
+- src/App.tsx - Wrapped with DatabaseProvider
+- package.json - Added dexie-react-hooks dependency
+
+**Codebase patterns learned:**
+- Use useLiveQuery from dexie-react-hooks for reactive queries
+- All mutations are async functions (not hooks) for easy calling from event handlers
+- Transactions used for cascading operations (delete candidate with interviews)
+- deleteInterview prevents deletion of last interview (FR-2 requirement)
+
+**Verified:**
+- npm run typecheck passes
+
+---
+
+## 2026-01-28 - T03: Profile Manager UI
+Thread: https://ampcode.com/threads/T-019c0655-4434-74f4-ae2b-57ad391b48cf
+Task ID: T03
+- Implemented full Profile Manager page with list, create/edit modal, and delete confirmation
+- Created reusable ProfileModal component with form validation
+- Created reusable ConfirmDialog component for delete confirmations
+- Added "in use" warning when deleting profiles assigned to candidates/interviews
+- Added CSS animations for modal enter/exit (fade-in, zoom-in-95)
+
+**Files created:**
+- src/components/ProfileModal.tsx - Create/Edit modal with form
+- src/components/ConfirmDialog.tsx - Reusable confirmation dialog
+
+**Files modified:**
+- src/pages/ProfileManager.tsx - Full implementation with table, CRUD operations
+- src/index.css - Added animation utilities and line-clamp
+
+**Codebase patterns learned:**
+- Use useCallback for event handlers passed to child components
+- Edit/delete buttons hidden by default, shown on row hover (opacity-0 group-hover:opacity-100)
+- Modal/dialog pattern: fixed overlay with backdrop blur + centered content
+- Async isProfileInUse check before showing delete dialog to display warning
+
+**Verified:**
+- npm run typecheck passes
+- Profile list displays seeded profiles correctly
+- Create Profile modal opens and creates new profiles
+- Edit Profile modal opens with pre-filled data
+- Delete confirmation dialog shows warning when profile is in use
+- All tested via agent-browser
+
+---
+
+## 2026-01-28 - T04: Candidate CRUD
+Thread: https://ampcode.com/threads/T-019c0658-7aa6-72d4-8878-311e6fee654b
+Task ID: T04
+- Implemented full CandidateList page with table showing name, tags, interview count, hire signal
+- Created CandidateModal component for create/edit (name + comma-separated tags)
+- Create candidate redirects to detail page after creation
+- Edit candidate modal pre-fills existing data
+- Delete candidate shows confirmation dialog with cascade warning
+- Reused ConfirmDialog component from T03
+
+**Files created:**
+- src/components/CandidateModal.tsx - Create/Edit modal with name and tags input
+
+**Files modified:**
+- src/pages/CandidateList.tsx - Full implementation with table, CRUD, empty state
+
+**Codebase patterns learned:**
+- Tags input: comma-separated string, split and trim on save
+- Row click navigates to detail, edit/delete buttons use e.stopPropagation()
+- InterviewCountBadge uses useInterviews(candidateId) for reactive count
+- HireSignalBadge uses Record<HireSignal, string> for color mapping
+
+**Verified:**
+- npm run typecheck passes
+- Empty state with "Add Candidate" button displays correctly
+- Create Candidate modal opens and creates new candidate
+- Candidate appears in table with tags, redirects to detail page
+- Edit Candidate modal opens with pre-filled data
+- Delete confirmation dialog shows cascade warning
+- All tested via agent-browser
+
+---
+
+## 2026-01-28 - T05: Interview CRUD
+Thread: https://ampcode.com/threads/T-019c065b-7923-705e-a79d-2840e07ad4af
+Task ID: T05
+- Created InterviewModal component with core fields (interviewer_name, interview_date, interview_type, notes_raw, hire_signal)
+- Updated CandidateDetail page with full interview timeline list and CRUD operations
+- Interview list shows interviewer name, type badge, hire signal badge, date, and notes preview
+- Add Interview button opens modal, creates interview linked to candidate
+- Edit Interview pre-fills modal with existing data, shows "Update Interview" button
+- Delete Interview shows confirmation dialog with warning when it's the last interview
+- Added InterviewTypeBadge component with color-coded styles per interview type
+- Reused HireSignalBadge and ConfirmDialog components
+
+**Files created:**
+- src/components/InterviewModal.tsx - Create/Edit modal with interviewer, date, type, notes, hire signal
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Full implementation with interview timeline, CRUD, loading/not-found states
+
+**Codebase patterns learned:**
+- Interview modal uses default axis_scores (all 3s) and empty axis_notes for new interviews
+- Delete interview uses deleteInterview hook which throws error if last interview
+- ConfirmDialog warning prop shows "cannot delete" message for last interview
+- InterviewTypeBadge uses same pattern as HireSignalBadge (Record<Type, string> for styles)
+- Loading state: animate-pulse skeleton placeholders
+- Not-found state: centered message with "Back to Candidates" button
+
+**Verified:**
+- npm run typecheck passes
+- CandidateDetail shows "No interviews yet" empty state
+- Add Interview modal opens with core fields
+- Interview appears in timeline after creation with all badges
+- Edit Interview modal pre-fills existing data
+- Delete shows warning when trying to delete last interview
+- All tested via agent-browser
+
+---
+
+## 2026-01-28 - T06: Candidate List View
+Thread: https://ampcode.com/threads/T-019c065f-3cae-7209-b5a9-a89b18549667
+Task ID: T06
+- Added search by name with search input field
+- Added tag chip filtering with toggle selection (AND logic - all selected tags must match)
+- Added sorting by name and updated_at with visual indicators
+- Added Primary Profile column showing profile name from lookup map
+- Added Updated column showing formatted date
+- Added "No matching candidates" empty state when filters return no results
+- Added "Clear all" button to reset filters
+
+**Files modified:**
+- src/pages/CandidateList.tsx - Added search, tag filters, sorting, profile column, updated column
+
+**Codebase patterns learned:**
+- Use useMemo for derived state (profileMap lookup, filteredCandidates, allTags)
+- Profile display: build Map<id, name> from useProfiles(), then lookup in render
+- Filter state: searchQuery string + selectedTags array, combine with AND logic
+- Sort state: sortField + sortDirection, toggle direction if same field clicked
+- Tag filter chips: selected = accent bg with X icon, unselected = slate bg
+- SortIcon component shows asc/desc chevrons with accent color when active
+
+**Verified:**
+- npm run typecheck passes
+
+---
+
+## 2026-01-28 - T07: Candidate Detail View
+Thread: https://ampcode.com/threads/T-019c0661-7050-70ac-ae87-5f086465e534
+Task ID: T07
+- Enhanced CandidateDetail page with editable tags in header (click to edit, comma-separated input)
+- Added Overall Hire Signal dropdown selector in header
+- Created Profile Fit card with Primary Profile dropdown selector
+- Added Secondary Profiles as checkboxes that filter out primary profile
+- Profile description shows below primary profile selector
+- Existing interview timeline and CRUD functionality preserved
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added editable tags, hire signal selector, profile selectors
+
+**Codebase patterns learned:**
+- Inline editing pattern: isEditingTags state, Enter to save, Escape to cancel
+- Group hover for edit button: group/tags with opacity-0 group-hover/tags:opacity-100
+- Checkbox list for multi-select: label wrapping input with cursor-pointer and conditional border colors
+- Profile filtering: filter out primary from secondary profile options
+- updateCandidate hook used for all candidate field updates
+
+**Verified:**
+- npm run typecheck passes
+
+---
+
+## 2026-01-28 - T08: Interview Form (Full)
+Thread: https://ampcode.com/threads/T-019c0663-ad01-7799-ae1e-79a108d3227d
+Task ID: T08
+- Completely redesigned InterviewModal with tabbed interface (Basic Info, Axis Scoring, Profile Fit)
+- Added 5 axis score inputs with distinctive circular button design (1-5 scale)
+- Color-coded score buttons (red→orange→amber→emerald) with dynamic fill and labels
+- Created CollapsibleAxisNotes component for per-axis notes (shows "Add notes" / "Notes added" indicator)
+- Added primary profile dropdown with description preview
+- Added secondary profiles as checkbox list with descriptions (filters out primary selection)
+- Navigation between tabs with Previous/Next buttons in footer
+- Modal now uses flex layout with overflow scroll for content area
+
+**Files modified:**
+- src/components/InterviewModal.tsx - Complete rewrite with tabbed interface, axis scoring, profile selectors
+
+**Codebase patterns learned:**
+- Tabbed modal pattern: activeTab state with conditional rendering, tab buttons in header
+- Score selector: array of circular buttons with filled state based on value <= current
+- SCORE_LABELS constant for score metadata (label + color class)
+- CollapsibleAxisNotes: toggle open state with hasContent indicator
+- Flex column layout with min-h-0 for scrollable content in modal
+
+**Verified:**
+- npm run typecheck passes
+
+---
+
+## 2026-01-28 - T09: Interview Comparison View
+Thread: https://ampcode.com/threads/T-019c0665-fb23-7031-8c2d-d98b2e827e96
+Task ID: T09
+- Created InterviewComparisonModal component with side-by-side axis scores table
+- Added interview selection checkboxes to CandidateDetail interview list
+- Added "Compare (N)" button that appears when 2-4 interviews selected
+- Implemented variance highlighting (≥2 difference shows red warning styling)
+- Shows interviewer names, dates, hire signals, average scores, and notes summary
+- Max 4 interviews can be selected for comparison
+
+**Files created:**
+- src/components/InterviewComparisonModal.tsx - Comparison modal with grid layout, variance detection
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added selection state, handlers, checkboxes, compare button, modal
+
+**Codebase patterns learned:**
+- Variance calculation: find min/max of axis scores across interviews, highlight if diff ≥ 2
+- Grid layout with dynamic columns: `gridTemplateColumns: \`200px repeat(\${count}, 1fr)\``
+- Selection limit pattern: check size < max || already selected before adding
+- ScoreBadge component with conditional ring styling for variance highlighting
+
+**Verified:**
+- npm run typecheck passes
+
+---
+
+## 2026-01-29 - T10: AI Prompt - Single Interview
+Thread: https://ampcode.com/threads/T-019c0669-634d-759e-93e7-4b141f56d3fb
+Task ID: T10
+- Created AIPromptModal component with generated prompt preview and copy functionality
+- Created Toast component for clipboard copy success notification
+- Added "Copy AI Prompt" button (sparkles icon) to interview row hover actions
+- Prompt includes: interview metadata, 5 axis scores with notes, hire signal, general notes
+- Prompt requests AI analysis: strengths, areas for development, red flags, role fit, follow-up questions
+- Shows character count and word count in modal footer
+- Violet/indigo gradient theming for AI-related UI elements
+
+**Files created:**
+- src/components/AIPromptModal.tsx - Prompt preview modal with copy to clipboard
+- src/components/Toast.tsx - Reusable toast notification component
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added AI prompt button, state handlers, modal + toast integration
+
+**Codebase patterns learned:**
+- Prompt generation: array of lines joined with \n for structured Markdown output
+- SCORE_DESCRIPTIONS constant maps 1-5 scores to descriptive labels for prompt context
+- Toast pattern: isLeaving state for exit animation before onHide callback
+- AI/magic features use violet-500 to indigo-600 gradient to differentiate from accent green
+
+**Verified:**
+- npm run typecheck passes
+
+---
+
+## 2026-01-29 - T11: AI Prompt - Candidate Summary
+Thread: https://ampcode.com/threads/T-019c0669-634d-759e-93e7-4b141f56d3fb
+Task ID: T11
+- Created CandidateSummaryPromptModal component for multi-interview prompt generation
+- Added "AI Prompt (All)" button in Interview Timeline header (only shows when interviews exist)
+- Prompt includes: candidate overview, signal conflict detection, aggregate axis scores with variance indicators
+- Detects conflicting hire signals (spread ≥2 = moderate, spread ≥3 = significant conflict)
+- Shows individual interview details with scores, notes, and per-interviewer breakdown
+- Requests holistic AI analysis: consensus strengths/concerns, signal reconciliation, role fit, risk assessment, final recommendation
+- Button uses subtle violet gradient styling to match AI theme
+- Shows interview count in modal footer alongside character/word count
+
+**Files created:**
+- src/components/CandidateSummaryPromptModal.tsx - Multi-interview prompt modal with conflict detection
+
+**Files modified:**
+- src/pages/CandidateDetail.tsx - Added summary prompt button, state, handlers, modal integration
+
+**Codebase patterns learned:**
+- HIRE_SIGNAL_ORDER constant maps signals to numeric values for conflict detection
+- detectSignalConflicts: compare min/max signal values, flag if spread ≥2
+- calculateAxisStats: compute avg/min/max/variance for aggregate display
+- Subtle gradient button: from-violet-500/10 to-indigo-500/10 with border-violet-200
+
+**Verified:**
+- npm run typecheck passes
+
+---
