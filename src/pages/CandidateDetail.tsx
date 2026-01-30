@@ -68,6 +68,8 @@ export function CandidateDetail() {
   const [autoUpdatePayload, setAutoUpdatePayload] = useState<AutoUpdatePayload | null>(null);
   const [isAutoUpdateOpen, setIsAutoUpdateOpen] = useState(false);
   const [showAppliedToast, setShowAppliedToast] = useState(false);
+  const [autoUpdateError, setAutoUpdateError] = useState<string | null>(null);
+  const [showAutoUpdateError, setShowAutoUpdateError] = useState(false);
 
   // Fetch interview for auto-update if interviewId is present
   const autoUpdateInterview = useInterview(autoUpdatePayload?.interviewId);
@@ -82,6 +84,25 @@ export function CandidateDetail() {
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, location.pathname, navigate]);
+
+  // Validate interviewId exists when payload has one
+  // useLiveQuery returns undefined when loading and undefined when not found
+  // We need to check after a small delay to allow the query to complete
+  useEffect(() => {
+    if (!isAutoUpdateOpen || !autoUpdatePayload?.interviewId) return;
+    
+    // Give useLiveQuery time to complete the initial query
+    const timer = setTimeout(() => {
+      if (autoUpdateInterview === undefined) {
+        setIsAutoUpdateOpen(false);
+        setAutoUpdatePayload(null);
+        setAutoUpdateError('Interview not found');
+        setShowAutoUpdateError(true);
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isAutoUpdateOpen, autoUpdatePayload?.interviewId, autoUpdateInterview]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | undefined>();
@@ -268,6 +289,10 @@ export function CandidateDetail() {
 
   const handleHideAppliedToast = useCallback(() => {
     setShowAppliedToast(false);
+  }, []);
+
+  const handleHideAutoUpdateError = useCallback(() => {
+    setShowAutoUpdateError(false);
   }, []);
 
   // Auto-update handlers
@@ -775,6 +800,13 @@ export function CandidateDetail() {
         message="Changes applied successfully"
         isVisible={showAppliedToast}
         onHide={handleHideAppliedToast}
+      />
+
+      <Toast
+        message={autoUpdateError || 'An error occurred'}
+        isVisible={showAutoUpdateError}
+        onHide={handleHideAutoUpdateError}
+        variant="error"
       />
 
       {deleteError && (

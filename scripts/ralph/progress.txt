@@ -117,3 +117,22 @@ Task ID: 32
   - Clear route state with navigate(pathname, { replace: true, state: null })
   - Partial updates: merge with existing axis_scores/axis_notes using spread operator
 ---
+
+## 2026-01-30 - Add error handling and edge cases
+Thread: https://ampcode.com/threads/T-019c0f96-53d0-71df-af88-f6393a4fd82e
+Task ID: 35
+- Added interview-not-found validation with error toast in CandidateDetail.tsx
+- New state: autoUpdateError (string|null), showAutoUpdateError (boolean)
+- useEffect validates after modal opens: if interviewId is in payload but interview is undefined, show error
+- Uses 100ms delay to allow useLiveQuery to complete initial query before checking
+- Added handleHideAutoUpdateError callback
+- Added error Toast with variant="error" for red styling
+- Error flow: closes modal, clears payload, shows "Interview not found" toast
+- Existing error handling verified:
+  - ApplyRoute.tsx: Invalid/malformed URLs show error toast and redirect to home
+  - CandidateDetail.tsx: Candidate not found returns "not found" UI
+- **Learnings:**
+  - useLiveQuery returns undefined for both loading AND not-found states
+  - Use setTimeout to allow async query to complete before checking for "not found"
+  - Toast variant="error" shows red icon instead of green checkmark
+---
