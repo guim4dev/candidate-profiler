@@ -2,6 +2,7 @@ import { useMemo, useCallback, useState } from 'react';
 import { format } from 'date-fns';
 import type { Interview, Axis } from '../types';
 import { AXIS_LABELS, HIRE_SIGNAL_LABELS, INTERVIEW_TYPE_LABELS } from '../types';
+import { generateAutoUpdateUrl } from '../utils/autoUpdateUrl';
 
 interface AIPromptModalProps {
   interview: Interview | null;
@@ -98,6 +99,52 @@ function generatePrompt(interview: Interview, candidateName: string): string {
   }
   
   lines.push(`${itemNum++}. **Summary Recommendation:** A brief 2-3 sentence overall assessment.`);
+
+  // Auto-update URL template section
+  const examplePayload = {
+    candidateId: interview.candidate_id,
+    interviewId: interview.id,
+    primary_profile: 'builder',
+    secondary_profiles: ['specialist'],
+    axis_scores: {
+      technical_depth: 4,
+      collaboration_communication: 5,
+    } as const,
+    axis_notes: {
+      technical_depth: 'Strong problem-solving skills',
+    } as const,
+  };
+  const exampleUrl = generateAutoUpdateUrl(examplePayload);
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : '{APP_URL}';
+
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('## Auto-Update URL');
+  lines.push('');
+  lines.push('After your analysis, generate a clickable URL to apply your recommendations directly to this interview:');
+  lines.push('');
+  lines.push(`**Format:** \`${appUrl}/#/apply?data={BASE64_JSON}\``);
+  lines.push('');
+  lines.push('**JSON payload fields:**');
+  lines.push(`- \`candidateId\`: "${interview.candidate_id}" (required, do not change)`);
+  lines.push(`- \`interviewId\`: "${interview.id}" (required for interview-specific updates)`);
+  lines.push('- `primary_profile`: "builder" | "specialist" | "leader" | "generalist" | "learner"');
+  lines.push('- `secondary_profiles`: ["profile1", "profile2"] (optional array)');
+  lines.push('- `axis_scores`: { "technical_depth": 1-5, "learning_growth": 1-5, ... } (partial updates allowed)');
+  lines.push('- `axis_notes`: { "technical_depth": "note text", ... } (optional notes per axis)');
+  lines.push('');
+  lines.push('**Instructions:**');
+  lines.push('1. Create a JSON object with your recommendations');
+  lines.push('2. Base64-encode the JSON string');
+  lines.push('3. Append it to the URL as the `data` parameter');
+  lines.push('');
+  lines.push('**Example:**');
+  lines.push('```json');
+  lines.push(JSON.stringify(examplePayload, null, 2));
+  lines.push('```');
+  lines.push('');
+  lines.push(`[Click to apply recommendations](${exampleUrl})`);
   
   return lines.join('\n');
 }

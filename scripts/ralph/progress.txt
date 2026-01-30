@@ -52,3 +52,17 @@ Task ID: 34
   - Use `as const` for literal type inference in example payloads
   - `window.location.origin` needs SSR guard (`typeof window !== 'undefined'`)
 ---
+
+## 2026-01-30 - Update AIPromptModal with URL template
+Thread: https://ampcode.com/threads/T-019c0f8d-2bce-70bc-ba77-fc90195bcf0b
+Task ID: 33
+- Added auto-update URL template section to `generatePrompt()` function in AIPromptModal.tsx
+- Imports `generateAutoUpdateUrl` from utils
+- Template includes: format explanation, JSON payload fields, instructions, and example URL
+- Interview-specific: includes both candidateId and interviewId in payload
+- Supports interview-level fields: axis_scores and axis_notes (partial updates allowed)
+- Example uses actual candidate_id and interview.id for valid URLs
+- **Learnings:**
+  - Interview has `candidate_id` (snake_case) for accessing the parent candidate
+  - For interview updates, both candidateId and interviewId are required in the payload
+---
